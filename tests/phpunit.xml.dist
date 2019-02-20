@@ -1,0 +1,28 @@
+<phpunit>
+    <testsuites>
+        <testsuite name="all">
+            <directory>.</directory>
+        </testsuite>
+        <testsuite name="s3">
+            <file>S3Test.php</file>
+        </testsuite>
+        <testsuite name="rest">
+            <directory>Rest</directory>
+        </testsuite>
+        <testsuite name="batch">
+            <directory>Batch</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <const name="ZAIUS_S3_KEY_ID" value="ADD_YOUR_VALUE_HERE"/>
+        <const name="ZAIUS_S3_SECRET" value="ADD_YOUR_VALUE_HERE"/>
+        <const name="ZAIUS_TRACKER_ID" value="ADD_YOUR_VALUE_HERE"/>
+        <const name="ZAIUS_PRIVATE_API_KEY" value="ADD_YOUR_VALUE_HERE"/>
+
+        <const name="DB_DRIVER" value="mysql"/>
+        <const name="DB_HOST" value="127.0.0.1"/>
+        <const name="DB_NAME" value="ADD_YOUR_VALUE_HERE"/>
+        <const name="DB_USER" value="ADD_YOUR_VALUE_HERE"/>
+        <const name="DB_PASSWORD" value="ADD_YOUR_VALUE_HERE"/>
+    </php>
+</phpunit>

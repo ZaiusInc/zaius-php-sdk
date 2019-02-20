@@ -1,0 +1,11 @@
+image: debian:stable
+
+pipelines:
+  branches: 
+    master: 
+      - step:
+          deployment: production
+          script:
+            - apt update && apt install -y openssh-client;
+            # Run generated deploy script: 
+            # - ssh -A ec2-user@zaiusmp.trellisstaging.com '/home/ec2-user/deploy/deploy-m2-zaius';

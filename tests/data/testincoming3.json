@@ -1,0 +1,3 @@
+{"type":"customer","data":{"customer_id":"1","email":"floyd@zaius.com","first_name":"Floyd","last_name":"Dogg"}}
+{"type":"customer","data":{"customer_id":"2","email":"johnny@zaius.co","first_name":"Johnny","last_name":"Zaius"}}
+{"type":"customer","data":{"customer_id":"3","email":"jdoe@zaius.com","first_name":"John","last_name":"Doe"}}
