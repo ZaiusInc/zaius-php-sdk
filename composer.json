@@ -1,5 +1,5 @@
 {
-  "name": "zaius/zaius_sdk",
+  "name": "zaius/zaius-php-sdk",
   "description": "The Zaius SDK for PHP",
   "keywords": [],
   "type": "library",
@@ -12,7 +12,7 @@
     }
   ],
   "support": {
-    "issues": "http://bitbucket.net"
+    "issues": "https://github.com/ZaiusInc/zaius-php-sdk/issues"
   },
   "require": {
     "php": ">=5.5",
@@ -28,10 +28,7 @@
   "autoload": {
     "psr-4": {
       "ZaiusSDK\\": "src/"
-    },
-    "files": [
-      "src/functions.php"
-    ]
+    }
   },
   "autoload-dev": {
     "psr-4": {
