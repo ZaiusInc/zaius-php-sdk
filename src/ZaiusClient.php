@@ -17,6 +17,9 @@ class ZaiusClient
     /** @var string */
     protected $apiKey;
 
+    /** @var string */
+    protected  $privateKey;
+
 
     /** @var int  */
     protected $timeout;
@@ -28,9 +31,10 @@ class ZaiusClient
      * @param string $apiKey
      * @param int $timeout
      */
-    public function __construct($apiKey = '',  $timeout = 30)
+    public function __construct($apiKey = '', $privateKey = '',  $timeout = 30)
     {
         $this->apiKey = $apiKey;
+        $this->privateKey = $privateKey;
         $this->timeout = $timeout;
     }
 
@@ -55,6 +59,7 @@ class ZaiusClient
      * @throws ZaiusException
      */
     public function getCustomer($filters) {
+        $this->apiKey = $this->privateKey;
         $result = $this->get($filters,self::API_URL_V3.'/profiles');
         if($result === null) return $result;
         else {
@@ -84,6 +89,7 @@ class ZaiusClient
         if(!isset($list['name'])) {
             throw new ZaiusException("You must specify the name of the list");
         }
+        $this->apiKey = $this->privateKey;
         return $this->process($list,self::API_URL_V3.'/lists','POST',$queue);
     }
 
@@ -147,6 +153,7 @@ class ZaiusClient
         $data['format'] = $format;
         $data['delimiter'] = $delimiter;
 
+        $this->apiKey = $this->privateKey;
         return $this->process($data,self::API_URL_V3.'/exports','POST',$queue,'POST',$queue);
     }
 
@@ -164,6 +171,7 @@ class ZaiusClient
         $data['format'] = $format;
         $data['delimiter'] = $delimiter;
 
+        $this->apiKey = $this->privateKey;
         return $this->process($data,self::API_URL_V3.'/exports','POST',$queue);
     }
 
@@ -173,6 +181,7 @@ class ZaiusClient
      * @throws ZaiusException
      */
     public function getExportStatus($exportId) {
+        $this->apiKey = $this->privateKey;
         return $this->get([],self::API_URL_V3.'/exports/'.$exportId);
     }
 
@@ -373,6 +382,7 @@ class ZaiusClient
     public function changeListName($listId, $newName,$queue=false) {
         $data = ['name'=>$newName];
 
+        $this->apiKey = $this->privateKey;
         return $this->process($data,self::API_URL_V3.'/lists/'.$listId,'PUT',$queue);
     }
 
@@ -552,7 +562,4 @@ class ZaiusClient
         }
 
     }
-
-
-
 }
