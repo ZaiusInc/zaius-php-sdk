@@ -213,6 +213,7 @@ class ZaiusClient
      * @throws ZaiusException
      */
     public function getObjects() {
+        $this->apiKey = $this->privateKey;
         $data = $this->get([],self::API_URL_V3.'/schema/objects');
         return json_decode($data,true);
     }
@@ -223,6 +224,7 @@ class ZaiusClient
      * @throws ZaiusException
      */
     public function getObject($objectName) {
+        $this->apiKey = $this->privateKey;
         $data = $this->get([],self::API_URL_V3.'/schema/objects/'.$objectName);
         return json_decode($data,true);
     }
@@ -238,6 +240,7 @@ class ZaiusClient
      * @throws ZaiusException
      */
     public function createObjectSchema($name,$displayName,$alias='',$fields,$relations,$queue=false) {
+        $this->apiKey = $this->privateKey;
         $data = [];
         $data['name'] = $name;
         $data['display_name'] = $displayName;
@@ -254,6 +257,7 @@ class ZaiusClient
      * @throws ZaiusException
      */
     public function getObjectFields($objectName) {
+        $this->apiKey = $this->privateKey;
         $data = $this->get([],self::API_URL_V3.'/schema/objects/'.$objectName.'/fields');
         return json_decode($data,true);
     }
@@ -265,6 +269,7 @@ class ZaiusClient
      * @throws ZaiusException
      */
     public function getObjectField($objectName,$fieldName) {
+        $this->apiKey = $this->privateKey;
         $data = [];
         $data['object_name'] = $objectName;
         $data['field_name'] = $fieldName;
@@ -284,6 +289,7 @@ class ZaiusClient
      * @throws ZaiusException
      */
     public function createObjectField($objectName,$fieldName,$type,$displayName,$description='',$queue=false) {
+        $this->apiKey = $this->privateKey;
         $data = [];
         $data['name'] = $fieldName;
         $data['type'] = $type;
@@ -299,6 +305,7 @@ class ZaiusClient
      * @throws ZaiusException
      */
     public function getRelations($objectName) {
+        $this->apiKey = $this->privateKey;
         $data = $this->get([],self::API_URL_V3.'/schema/objects/'.$objectName.'/relations');
         return json_decode($data,true);
     }
@@ -310,6 +317,7 @@ class ZaiusClient
      * @throws ZaiusException
      */
     public function getRelation($objectName,$relationName) {
+        $this->apiKey = $this->privateKey;
         $data = $this->get([],self::API_URL_V3.'/schema/objects/'.$objectName.'/relations/'.$relationName);
         return json_decode($data,true);
     }
@@ -357,6 +365,7 @@ class ZaiusClient
      * @throws ZaiusException
      */
     public function createRelations($objectName,$relations,$queue=false) {
+        $this->apiKey = $this->privateKey;
         return $this->process($relations,self::API_URL_V3.'/schema/objects/'.$objectName.'/relations','POST',$queue);
     }
 
