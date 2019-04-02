@@ -107,7 +107,8 @@ class S3Client
                 if (!isset($datum[$key])) {
                     throw new ZaiusException("Key $key must be defined");
                 }
-                if ($value == 'array' && !is_array($datum[$key])) {;
+                if ($value == 'array' && !is_array($datum[$key])) {
+                    ;
                     throw new ZaiusException("Key $key must contain an array");
                 }
             }
@@ -119,20 +120,135 @@ class S3Client
     /**
      * @param array $data
      * @param string $type
+     * @param string $errormsg
+     * @throws ZaiusException
+     */
+    protected function checkCompatibility($data, $type, $errormsg)
+    {
+        foreach ($data as $datum) {
+            $requiredFields = ['type' => '', 'data' => 'array'];
+            foreach ($requiredFields as $key => $value) {
+                if (!isset($datum[$key])) {
+                    throw new ZaiusException("Key $key must be defined on output.");
+                }
+                if ($value == 'array' && !is_array($datum[$key])) {
+                    ;
+                    throw new ZaiusException("Key $key must contain an array on output.");
+                }
+            }
+
+            switch ($type) {
+                case 'events':
+                    $this->eventValidator($datum);
+                    break;
+                default:
+                    throw new ZaiusException("Invalid passthrough. " . $errormsg);
+            }
+        }
+
+        return;
+    }
+
+    /**
+     * @param array $event
+     * @throws ZaiusException
+     */
+    protected function eventValidator($event)
+    {
+        $data = $event["data"];
+        $this->checkIdentifiers($data);
+        $etype = $event["type"];
+        switch ($etype) {
+            case 'pageview':
+                break;
+            case 'list':
+                $list_id = $data["list_id"];
+                $email = $data["email"];
+                $action = $data["action"];
+                if (empty($list_id)) {
+                    throw new ZaiusException("S3-bound list events must specify data.list_id");
+                }
+                if (empty($email)) {
+                    throw new ZaiusException("S3-bound list events must specify data.email");
+                }
+                if (empty($action)) {
+                    throw new ZaiusException("S3-bound list events must specify data.action");
+                }
+                if ($action != "unsubscribe" && $action != "subscribe") {
+                    throw new ZaiusException("S3-bound list events must have data.action of [un]subscribe");
+                }
+                break;
+            case 'product':
+                $product_id = $data["product_id"];
+                if (empty($product_id)) {
+                    throw new ZaiusException("S3-bound product events must have data.product_id");
+                }
+                break;
+            case 'order':
+                if (!is_array($data["order"])) {
+                    throw new ZaiusException("S3-bound order events must have an array on data.order");
+                }
+                $order_id = $data["order"]["order_id"];
+                if (empty($order_id)) {
+                    throw new ZaiusException("S3-bound order events must have data.order.order_id");
+                }
+                break;
+            default:
+                // Arbitrary Events with type (checked here) and an identifier (checked earlier) are acceptable.
+                if (empty($etype)) {
+                    throw new ZaiusException("S3-bound events must have 'type' specified.");
+                }
+                break;
+        }
+        return;
+    }
+
+    /**
+     * @param array $data
+     * @throws ZaiusException
+     */
+    protected function checkIdentifiers($data)
+    {
+        foreach ($data as $key => $value) {
+            switch ($key) {
+                case 'customer_id':
+                case 'email':
+                case 'vuid':
+                    return;
+                default:
+                    if (preg_match("/^zaius_alias_\w+/", $key) || preg_match("/\w+_push_tokens$/", $key)) {
+                        return;
+                    }
+                    break;
+            }
+        }
+        throw new ZaiusException("No identifier found.");
+    }
+
+    /**
+     * @param array $data
+     * @param string $type
      * @param bool $storeInTmp
      * @return \Aws\Result
      * @throws ZaiusException
      */
     protected function uploadDataToS3($data, $type, $storeInTmp = false)
     {
-
-        $this->validate($data, $type);
+        try {
+            $this->validate($data, $type);
+        } catch (ZaiusException $e) {
+            $errormsg = $e->getMessage();
+            if ($errormsg == "Unknown Type") {
+                throw $e;
+            } else {
+                $this->checkCompatibility($data, $type, $errormsg);
+            }
+        }
 
         $s3Translator = new S3Translator();
         switch ($type) {
             case 'events':
                 $translatedData = $s3Translator->translateEvents($data);
-                $s3Type = 'event';
                 $s3Extension = 'events.zaius';
                 break;
             case 'customers':
@@ -165,7 +281,11 @@ class S3Client
 
         $jsonBody = '';
         foreach ($translatedData as $datum) {
-            $tmp = ['type' => $s3Type, 'data' => $datum];
+            if ($type == 'events') {
+                $tmp = $datum;
+            } else {
+                $tmp = ['type' => $s3Type, 'data' => $datum];
+            }
             $jsonBody .= json_encode($tmp) . "\n";
         }
 
@@ -182,5 +302,4 @@ class S3Client
         ]);
         return $ret;
     }
-
 }
