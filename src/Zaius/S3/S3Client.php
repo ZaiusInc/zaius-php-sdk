@@ -89,7 +89,7 @@ class S3Client
                     $requiredFields = ['type' => '', 'action' => '', 'identifiers' => 'array', 'data' => 'array'];
                     break;
                 case 'customers':
-                    $requiredFields = ['customer_id' => ''];
+                    $requiredFields = ['attributes' => 'array'];
                     break;
                 case 'orders':
                     $requiredFields = ['order' => 'array', 'identifiers' => 'array'];
@@ -118,12 +118,14 @@ class S3Client
     }
 
     /**
+     * Ensures a dataset is compatible before writing into S3.
+     *
      * @param array $data
      * @param string $type
-     * @param string $errormsg
+     * @param string $errormsg Optional error message for calling as a fallback to inbound validation.
      * @throws ZaiusException
      */
-    protected function checkCompatibility($data, $type, $errormsg)
+    protected function checkCompatibility($data, $type, $errormsg = '')
     {
         foreach ($data as $datum) {
             $requiredFields = ['type' => '', 'data' => 'array'];
@@ -131,8 +133,7 @@ class S3Client
                 if (!isset($datum[$key])) {
                     throw new ZaiusException("Key $key must be defined on output.");
                 }
-                if ($value == 'array' && !is_array($datum[$key])) {
-                    ;
+                if ($value == 'array' && !is_array($datum[$key])) {;
                     throw new ZaiusException("Key $key must contain an array on output.");
                 }
             }
@@ -140,6 +141,9 @@ class S3Client
             switch ($type) {
                 case 'events':
                     $this->eventValidator($datum);
+                    break;
+                case 'customers':
+                    $this->customerValidator($datum);
                     break;
                 default:
                     throw new ZaiusException("Invalid passthrough. " . $errormsg);
@@ -204,6 +208,23 @@ class S3Client
     }
 
     /**
+     * Validates a customer outbound to S3.
+     *
+     * @param array $customer
+     */
+    protected function customerValidator($customer)
+    {
+        $ctype = $customer["type"];
+        if ($ctype != "customer") {
+            throw new ZaiusException("S3-bound customers must have 'type' of 'customer'");
+        }
+        $this->checkIdentifiers($customer["data"]);
+        return;
+    }
+
+    /**
+     * Allows us to confirm that at least one valid identifier is present when needed.
+     *
      * @param array $data
      * @throws ZaiusException
      */
@@ -234,6 +255,8 @@ class S3Client
      */
     protected function uploadDataToS3($data, $type, $storeInTmp = false)
     {
+
+        $needsTranslation = true;
         try {
             $this->validate($data, $type);
         } catch (ZaiusException $e) {
@@ -242,18 +265,26 @@ class S3Client
                 throw $e;
             } else {
                 $this->checkCompatibility($data, $type, $errormsg);
+                $needsTranslation = false;
             }
         }
 
         $s3Translator = new S3Translator();
         switch ($type) {
             case 'events':
-                $translatedData = $s3Translator->translateEvents($data);
+                if ($needsTranslation) {
+                    $translatedData = $s3Translator->translateEvents($data);
+                } else {
+                    $translatedData = $data;
+                }
                 $s3Extension = 'events.zaius';
                 break;
             case 'customers':
-                $translatedData = $s3Translator->translateCustomers($data);
-                $s3Type = 'customer';
+                if ($needsTranslation) {
+                    $translatedData = $s3Translator->translateCustomers($data);
+                } else {
+                    $translatedData = $data;
+                }
                 $s3Extension = 'customers.zaius';
                 break;
             case 'orders':
@@ -281,7 +312,7 @@ class S3Client
 
         $jsonBody = '';
         foreach ($translatedData as $datum) {
-            if ($type == 'events') {
+            if ($type == 'events' || $type == 'customers') {
                 $tmp = $datum;
             } else {
                 $tmp = ['type' => $s3Type, 'data' => $datum];

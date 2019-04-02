@@ -30,7 +30,18 @@ class S3Translator
 
     public function translateCustomers($data)
     {
-        return $data;
+        $translatedData = array();
+        foreach ($data as $datum) {
+            $translatedDataItem = array();
+            $translatedDataItem['type'] = "customer";
+            if (isset($datum['attributes'])) {
+                foreach ($datum['attributes'] as $key => $value) {
+                    $translatedDataItem['data'][$key] = $value;
+                }
+            }
+            $translatedData[] = $translatedDataItem;
+        }
+        return $translatedData;
     }
 
     public function translateOrders($data)
