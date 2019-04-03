@@ -86,13 +86,11 @@ class S3Client
         foreach ($data as $datum) {
             switch ($type) {
                 case 'events':
+                case 'orders':
                     $requiredFields = ['type' => '', 'action' => '', 'identifiers' => 'array', 'data' => 'array'];
                     break;
                 case 'customers':
                     $requiredFields = ['attributes' => 'array'];
-                    break;
-                case 'orders':
-                    $requiredFields = ['order' => 'array', 'identifiers' => 'array'];
                     break;
                 case 'products':
                     $requiredFields = ['product_id' => ''];
@@ -148,6 +146,8 @@ class S3Client
                 case 'products':
                     $this->productValidator($datum);
                     break;
+                case 'orders':
+                    $this->orderValidator($datum);
                 default:
                     throw new ZaiusException("Invalid passthrough. " . $errormsg);
             }
@@ -236,7 +236,53 @@ class S3Client
         if ($ptype != "product") {
             throw new ZaiusException("S3-bound products must have 'type' of 'product'");
         }
-        $product_id = $product["data"]["product_id"];
+        $this->isValidProductDatum($product["data"]);
+        return;
+    }
+
+    /**
+     * Validates a product datum - part of products and order items.
+     *
+     * @param array $product
+     */
+    protected function isValidProductDatum($product)
+    {
+        $product_id = $product["product_id"];
+        if (empty($product_id)) {
+            throw new ZaiusException("S3-bound products must have a 'product_id'");
+        }
+        return;
+    }
+
+    /**
+     * Validates an order outbound to S3.
+     *
+     * @param array $order
+     */
+    protected function orderValidator($order)
+    {
+        $otype = $order["type"];
+        if ($otype != "order") {
+            throw new ZaiusException("S3-bound orders must have 'type' of 'order'");
+        }
+        // Orders must pass standard event validation to start.
+        $this->eventValidator($order);
+        // Orders must match particular actions.
+        $oaction = $order["data"]["action"];
+        if (!in_array($oaction, ["purchase", "refund", "return", "cancel"], true)) {
+            throw new ZaiusException("S3-bound orders must have action of 'purchase', 'refund', 'return', or 'cancel'.");
+        }
+        // Order Items are optional, but must validate if present
+        if (isset($order["data"]["items"])) {
+            $items = $order["data"]["items"];
+            if (!is_array($items)) {
+                throw new ZaiusException("S3-bound order items ('data.order.items') must be an array if present.");
+            } else {
+                foreach ($items as $item) {
+                    $this->isValidProductDatum($item);
+                }
+            }
+        }
         if (empty($product_id)) {
             throw new ZaiusException("S3-bound products must have 'data.product_id'");
         }
@@ -309,8 +355,11 @@ class S3Client
                 $s3Extension = 'customers.zaius';
                 break;
             case 'orders':
-                $translatedData = $s3Translator->translateOrders($data);
-                $s3Type = 'order';
+                if ($needsTranslation) {
+                    $translatedData = $s3Translator->translateOrders($data);
+                } else {
+                    $translatedData = $data;
+                }
                 $s3Extension = 'orders.zaius';
                 break;
             case 'products':
@@ -336,12 +385,7 @@ class S3Client
 
         $jsonBody = '';
         foreach ($translatedData as $datum) {
-            if ($type == 'events' || $type == 'customers' || $type == 'products') {
-                $tmp = $datum;
-            } else {
-                $tmp = ['type' => $s3Type, 'data' => $datum];
-            }
-            $jsonBody .= json_encode($tmp) . "\n";
+            $jsonBody .= json_encode($datum) . "\n";
         }
 
         if ($storeInTmp) {

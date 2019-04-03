@@ -46,19 +46,8 @@ class S3Translator
 
     public function translateOrders($data)
     {
-        $translatedData = array();
-
-        foreach ($data as $datum) {
-            $translatedDataItem = array();
-            foreach ($datum['identifiers'] as $key => $value) {
-                $translatedDataItem[$key] = $value;
-            }
-            $translatedDataItem['order'] = $datum['order'];
-
-            $translatedData[] = $translatedDataItem;
-        }
-
-        return $translatedData;
+        // Orders are a special case of events.
+        return $this->translateEvents($data);
     }
 
     public function translateProducts($data)
