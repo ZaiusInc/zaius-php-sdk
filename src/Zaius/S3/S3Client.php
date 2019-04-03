@@ -29,7 +29,7 @@ class S3Client
      * @param string $keyId
      * @param string $secretAccessKey
      */
-    public function __construct($trackerId,$keyId,$secretAccessKey)
+    public function __construct($trackerId, $keyId, $secretAccessKey)
     {
         $this->trackerId = $trackerId;
         $this->keyId = $keyId;
@@ -41,8 +41,9 @@ class S3Client
      * @param bool $storeInTmp
      * @throws ZaiusException
      */
-    public function uploadEvents($events,$storeInTmp = false) {
-        $this->uploadDataToS3($events,'events',$storeInTmp);
+    public function uploadEvents($events, $storeInTmp = false)
+    {
+        $this->uploadDataToS3($events, 'events', $storeInTmp);
     }
 
     /**
@@ -50,8 +51,9 @@ class S3Client
      * @param bool $storeInTmp
      * @throws ZaiusException
      */
-    public function uploadCustomers($customers,$storeInTmp = false) {
-        $this->uploadDataToS3($customers,'customers',$storeInTmp);
+    public function uploadCustomers($customers, $storeInTmp = false)
+    {
+        $this->uploadDataToS3($customers, 'customers', $storeInTmp);
     }
 
     /**
@@ -59,8 +61,9 @@ class S3Client
      * @param bool $storeInTmp
      * @throws ZaiusException
      */
-    public function uploadProducts($products,$storeInTmp = false) {
-        $this->uploadDataToS3($products,'products',$storeInTmp);
+    public function uploadProducts($products, $storeInTmp = false)
+    {
+        $this->uploadDataToS3($products, 'products', $storeInTmp);
     }
 
     /**
@@ -68,8 +71,9 @@ class S3Client
      * @param bool $storeInTmp
      * @throws ZaiusException
      */
-    public function uploadOrders($orders,$storeInTmp = false) {
-        $this->uploadDataToS3($orders,'orders',$storeInTmp);
+    public function uploadOrders($orders, $storeInTmp = false)
+    {
+        $this->uploadDataToS3($orders, 'orders', $storeInTmp);
     }
 
     /**
@@ -77,37 +81,37 @@ class S3Client
      * @param string $type
      * @throws ZaiusException
      */
-    protected function validate($data,$type) {
-        foreach($data as $datum) {
+    protected function validate($data, $type)
+    {
+        foreach ($data as $datum) {
             switch ($type) {
                 case 'events':
-                    $requiredFields = ['type'=>'','action' => '','identifiers' => 'array','data' => 'array'];
+                    $requiredFields = ['type' => '', 'action' => '', 'identifiers' => 'array', 'data' => 'array'];
                     break;
                 case 'customers':
-                    $requiredFields = ['customer_id'=>''];
+                    $requiredFields = ['customer_id' => ''];
                     break;
                 case 'orders':
-                    $requiredFields = ['order'=>'array','identifiers'=>'array'];
+                    $requiredFields = ['order' => 'array', 'identifiers' => 'array'];
                     break;
                 case 'products':
-                    $requiredFields = ['product_id'=>''];
+                    $requiredFields = ['product_id' => ''];
                     break;
                 default:
                     throw new ZaiusException("Unknown type");
             }
         }
 
-        foreach($data as $datum) {
-            foreach($requiredFields as $key=>$value) {
-                if(!isset($datum[$key])) {
+        foreach ($data as $datum) {
+            foreach ($requiredFields as $key => $value) {
+                if (!isset($datum[$key])) {
                     throw new ZaiusException("Key $key must be defined");
                 }
-                if($value == 'array' && !is_array($datum[$key])) {;
+                if ($value == 'array' && !is_array($datum[$key])) {;
                     throw new ZaiusException("Key $key must contain an array");
                 }
             }
         }
-
 
         return;
     }
@@ -119,12 +123,13 @@ class S3Client
      * @return \Aws\Result
      * @throws ZaiusException
      */
-    protected function uploadDataToS3($data,$type,$storeInTmp = false) {
+    protected function uploadDataToS3($data, $type, $storeInTmp = false)
+    {
 
-        $this->validate($data,$type);
+        $this->validate($data, $type);
 
         $s3Translator = new S3Translator();
-        switch($type) {
+        switch ($type) {
             case 'events':
                 $translatedData = $s3Translator->translateEvents($data);
                 $s3Type = 'event';
@@ -149,37 +154,33 @@ class S3Client
                 throw new ZaiusException("Invalid S3 type");
         }
 
-
         $s3 = new \Aws\S3\S3Client([
-            'version'=>'latest',
-            'region'=>'us-east-1',
+            'version' => 'latest',
+            'region' => 'us-east-1',
             'credentials' => [
                 'key' => $this->keyId,
-                'secret' => $this->secretAccessKey
-            ]
+                'secret' => $this->secretAccessKey,
+            ],
         ]);
 
         $jsonBody = '';
-        foreach($translatedData as $datum) {
-            $tmp = ['type'=>$s3Type,'data'=>$datum];
-            $jsonBody.=json_encode($tmp)."\n";
+        foreach ($translatedData as $datum) {
+            $tmp = ['type' => $s3Type, 'data' => $datum];
+            $jsonBody .= json_encode($tmp) . "\n";
         }
 
-        if($storeInTmp) {
+        if ($storeInTmp) {
             $bucket = self::ZAIUS_INCOMING_TMP;
-        }
-        else {
+        } else {
             $bucket = self::ZAIUS_INCOMING;
         }
 
         $ret = $s3->putObject([
             'Bucket' => $bucket,
-            'Key' =>  $key = $this->trackerId.'/'.date('Y-m-d-H-i-s').'.'.$s3Extension,
-            'Body' => $jsonBody
+            'Key' => $key = $this->trackerId . '/' . date('Y-m-d-H-i-s') . '.' . $s3Extension,
+            'Body' => $jsonBody,
         ]);
         return $ret;
     }
-
-
 
 }
