@@ -63,6 +63,13 @@ class S3Translator
 
     public function translateProducts($data)
     {
-        return $data;
+        $translatedData = array();
+        foreach ($data as $datum) {
+            $translatedDataItem = array();
+            $translatedDataItem['type'] = "product";
+            $translatedDataItem['data'] = $datum;
+            $translatedData[] = $translatedDataItem;
+        }
+        return $translatedData;
     }
 }

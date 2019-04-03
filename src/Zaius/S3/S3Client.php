@@ -145,6 +145,9 @@ class S3Client
                 case 'customers':
                     $this->customerValidator($datum);
                     break;
+                case 'products':
+                    $this->productValidator($datum);
+                    break;
                 default:
                     throw new ZaiusException("Invalid passthrough. " . $errormsg);
             }
@@ -223,6 +226,24 @@ class S3Client
     }
 
     /**
+     * Validates a product outbound to S3.
+     *
+     * @param array $product
+     */
+    protected function productValidator($product)
+    {
+        $ptype = $product["type"];
+        if ($ptype != "product") {
+            throw new ZaiusException("S3-bound products must have 'type' of 'product'");
+        }
+        $product_id = $product["data"]["product_id"];
+        if (empty($product_id)) {
+            throw new ZaiusException("S3-bound products must have 'data.product_id'");
+        }
+        return;
+    }
+
+    /**
      * Allows us to confirm that at least one valid identifier is present when needed.
      *
      * @param array $data
@@ -293,8 +314,11 @@ class S3Client
                 $s3Extension = 'orders.zaius';
                 break;
             case 'products':
-                $translatedData = $s3Translator->translateProducts($data);
-                $s3Type = 'product';
+                if ($needsTranslation) {
+                    $translatedData = $s3Translator->translateProducts($data);
+                } else {
+                    $translatedData = $data;
+                }
                 $s3Extension = 'products.zaius';
                 break;
             default:
@@ -312,7 +336,7 @@ class S3Client
 
         $jsonBody = '';
         foreach ($translatedData as $datum) {
-            if ($type == 'events' || $type == 'customers') {
+            if ($type == 'events' || $type == 'customers' || $type == 'products') {
                 $tmp = $datum;
             } else {
                 $tmp = ['type' => $s3Type, 'data' => $datum];
