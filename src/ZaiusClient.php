@@ -45,6 +45,7 @@ class ZaiusClient
      * @throws ZaiusException
      */
     public function postCustomer($customers,$queue=false) {
+        $this->apiKey = $this->privateKey;
         $customers = $this->prepareForPost($customers);
         $realCustomers = array();
         foreach($customers as $customer) {
