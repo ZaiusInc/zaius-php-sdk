@@ -16,7 +16,7 @@ You can get an instance of the Zaius client using:
 $zaiusClient = new \ZaiusSDK\ZaiusClient($apiKey);
 ```
 
-The API key can be obtained from your Zaius account at https://app.zaius.com/app?scope=731#/api_management . Click on the "Private" tab and use the private API key.
+The API key can be obtained from your Zaius account at https://app.zaius.com/app#/api_management . Click on the "Private" tab and use the private API key.
 
 ## Available methods
 
@@ -473,7 +473,7 @@ $s3Client->uploadOrders($orders);
 
 All Zaius methods expect arrays in a specific format. Besides the keys listed for each object, any other key/value pair is accepted and will be sent as a custom field, if it was defined via the Zaius dashboard/schema API
 
-To see the full list of available fields, access https://app.zaius.com/app?scope=731#/custom_fields after logging in into your Zaius account.
+To see the full list of available fields, access https://app.zaius.com/app#/custom_fields after logging in into your Zaius account.
 
 
 ### Customers

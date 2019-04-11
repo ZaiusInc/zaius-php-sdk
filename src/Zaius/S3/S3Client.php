@@ -41,8 +41,8 @@ class S3Client
      * @param bool $storeInTmp
      * @throws ZaiusException
      */
-    public function uploadEvents($events,$storeInTmp = false) {
-        $this->uploadDataToS3($events,'events',$storeInTmp);
+    public function uploadEvents($events,$storeInTmp = false, $prefix = null) {
+        $this->uploadDataToS3($events,'events',$storeInTmp, $prefix);
     }
 
     /**
@@ -50,8 +50,8 @@ class S3Client
      * @param bool $storeInTmp
      * @throws ZaiusException
      */
-    public function uploadCustomers($customers,$storeInTmp = false) {
-        $this->uploadDataToS3($customers,'customers',$storeInTmp);
+    public function uploadCustomers($customers,$storeInTmp = false, $prefix = null) {
+        $this->uploadDataToS3($customers,'customers',$storeInTmp, $prefix);
     }
 
     /**
@@ -59,8 +59,8 @@ class S3Client
      * @param bool $storeInTmp
      * @throws ZaiusException
      */
-    public function uploadProducts($products,$storeInTmp = false) {
-        $this->uploadDataToS3($products,'products',$storeInTmp);
+    public function uploadProducts($products,$storeInTmp = false, $prefix = null) {
+        $this->uploadDataToS3($products,'products',$storeInTmp, $prefix);
     }
 
     /**
@@ -68,8 +68,8 @@ class S3Client
      * @param bool $storeInTmp
      * @throws ZaiusException
      */
-    public function uploadOrders($orders,$storeInTmp = false) {
-        $this->uploadDataToS3($orders,'orders',$storeInTmp);
+    public function uploadOrders($orders,$storeInTmp = false, $prefix = null) {
+        $this->uploadDataToS3($orders,'orders',$storeInTmp, $prefix);
     }
 
     /**
@@ -119,7 +119,7 @@ class S3Client
      * @return \Aws\Result
      * @throws ZaiusException
      */
-    protected function uploadDataToS3($data,$type,$storeInTmp = false) {
+    protected function uploadDataToS3($data,$type,$storeInTmp = false, $prefix = null) {
 
         $this->validate($data,$type);
 
@@ -128,22 +128,22 @@ class S3Client
             case 'events':
                 $translatedData = $s3Translator->translateEvents($data);
                 $s3Type = 'event';
-                $s3Extension = 'events.zaius';
+                $s3Extension = $prefix . 'events.zaius';
                 break;
             case 'customers':
                 $translatedData = $s3Translator->translateCustomers($data);
                 $s3Type = 'customer';
-                $s3Extension = 'customers.zaius';
+                $s3Extension = $prefix . 'customers.zaius';
                 break;
             case 'orders':
                 $translatedData = $s3Translator->translateOrders($data);
                 $s3Type = 'order';
-                $s3Extension = 'orders.zaius';
+                $s3Extension = $prefix . 'orders.zaius';
                 break;
             case 'products':
                 $translatedData = $s3Translator->translateProducts($data);
                 $s3Type = 'product';
-                $s3Extension = 'products.zaius';
+                $s3Extension = $prefix . 'products.zaius';
                 break;
             default:
                 throw new ZaiusException("Invalid S3 type");
