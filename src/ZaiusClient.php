@@ -582,9 +582,6 @@ class ZaiusClient
                 curl_close($curl);
                 throw new ZaiusException($this->zaiusExceptionMessage($customErrorMessage, $method, $error, $info, $result));
             }
-            if ($info['http_code'] == 404) {
-                $result = null;
-            }
 
             curl_close($curl);
             return $result;
@@ -710,23 +707,39 @@ class ZaiusClient
             $error = curl_error($curl);
             throw new ZaiusException("Failed to GET from Zaius. Error: $error . Http code {$info['http_code']}. Raw response $result");
         }
-        if ($info['http_code'] == 404) {
-            return null;
-        } else {
-            return $result;
-        }
+
+        return $result;
+
     }
 
     /**
-     * Check if it is not false, 200, 201, 202 or 404
+     * Check if it is false or not a HTTP 200
+     * or return the type (e.g. 404 will return 400)
      *
      * @param $result
      * @param $info
      * @return bool
      */
-    private function showException($result, $info)
+    private function showException($result, $info, $returnType = false)
     {
-        return ($result === false || ($info['http_code'] != 200 && $info['http_code'] != 201 && $info['http_code'] != 202 && $info['http_code'] != 404));
+        if(!$result){
+            return false;
+        }
+        if(!$returnType) {
+            return ($info['http_code'] >= 200 && $info['http_code'] < 300);
+        }
+        switch ($info['http_code']){
+            case ($info['http_code'] < 200):
+                return 100;
+            case ($info['http_code'] >= 200 && $info['http_code'] < 300):
+                return 200;
+            case ($info['http_code'] >= 300 && $info['http_code'] < 400):
+                return 300;
+            case ($info['http_code'] >= 400 && $info['http_code'] < 500):
+                return 400;
+            case ($info['http_code'] >= 500):
+                return 500;
+        }
     }
 
     /**
