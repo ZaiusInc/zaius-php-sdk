@@ -509,7 +509,7 @@ class ZaiusClient
 
         $result = curl_exec($curl);
         $info = curl_getinfo($curl);
-        if ($result === false || ($info['http_code'] != 200 && $info['http_code'] != 202) && $info['http_code'] != 201) {
+        if ($this->showException($result, $info)) {
             $error = curl_error($curl);
             throw new ZaiusException("Failed
              to $method to Zaius. Request: $url - $jsonData. Error: $error . Http code {$info['http_code']}. Raw response $result");
@@ -531,6 +531,9 @@ class ZaiusClient
         if ($queue) {
             return \DJJob::enqueue(new Job($this->apiKey, $parameters, $url, $method));
         } else {
+            $attempts = $this->removeAttempts($parameters, true);
+            $parameters = $this->removeAttempts($parameters);
+
             $method = strtoupper($method);
             $curl = curl_init();
 
@@ -568,18 +571,106 @@ class ZaiusClient
             $info = curl_getinfo($curl);
 
             if ($this->showException($result, $info)) {
+                $customErrorMessage = false;
+                if ($info['http_code'] == 500) {
+                    $retryLater = $this->retryLater(["+10 seconds", "+30 seconds", "+1 minute", "+5 minutes"], $attempts, $this->apiKey, $parameters, $url, $method);
+                    if (!$retryLater) {
+                        $customErrorMessage = 'FAILURE posting to Zaius, repeated 5xx error codes. No further attempts will be made. Raw request:'.$curl;
+                    }
+                }
                 $error = curl_error($curl);
                 curl_close($curl);
-                throw new ZaiusException("Failed to {$method} from Zaius. Error: $error . Http code {$info['http_code']}. Raw response $result");
+                throw new ZaiusException($this->zaiusExceptionMessage($customErrorMessage, $method, $error, $info, $result));
             }
             if ($info['http_code'] == 404) {
-                curl_close($curl);
-                return null;
-            } else {
-                curl_close($curl);
-                return $result;
+                $result = null;
+            }
+
+            curl_close($curl);
+            return $result;
+        }
+    }
+
+    /**
+     * Remove the attempts from the parameters or
+     * Return the attempts number
+     *
+     * @param $parameters
+     * @param bool $returnAttempts
+     * @return int|mixed
+     */
+    private function removeAttempts($parameters, $returnAttempts = false)
+    {
+        $attempts = 0;
+        if (isset($parameters[0])) {
+            if (array_key_exists('attempts', $parameters[0])) {
+                $attempts = $parameters[0]['attempts'];
+                array_shift($parameters);
             }
         }
+        return ($returnAttempts) ? $attempts : $parameters;
+    }
+
+    /**
+     * Set when retry the same Job
+     *
+     * @param array $time
+     * @param $apiKey
+     * @param $parameters
+     * @param $url
+     * @param $method
+     */
+    private function retryLater(array $time, int $attempts, $apiKey, $parameters, $url, $method)
+    {
+        $i=0;
+        $run_at = null;
+        array_unshift($parameters, ['attempts'=>$attempts]);
+
+        if ($attempts > count($time)) {
+            return false;
+        }
+
+        while ($i < count($time)) {
+            if ($i == $attempts) {
+                $run_at = $this->get_date($time[$i], "Y-m-d H:i:s");
+                break;
+            }
+            $i++;
+        }
+
+        $attempts++;
+        $this->enqueue(new Job($this->apiKey, $parameters, $url, $method), $run_at);
+
+        return true;
+    }
+
+    /**
+     * Return a custom or the default message
+     *
+     * @param bool $customErrorMessage
+     * @param $method
+     * @param $error
+     * @param $info
+     * @param $result
+     * @return bool|string
+     */
+    private function zaiusExceptionMessage($customErrorMessage = false, $method, $error, $info, $result)
+    {
+        if (!$customErrorMessage) {
+            return "Failed to {$method} from Zaius. Error: $error . Http code {$info['http_code']}. Raw response $result";
+        }
+        return $customErrorMessage;
+    }
+    /**
+     * Enqueue a new Job
+     *
+     * @param $handler
+     * @param null $run_at
+     * @return bool|string
+     */
+    private function enqueue($handler, $run_at = null)
+    {
+        return \DJJob::enqueue($handler, $queue = "default", $run_at);
     }
 
     /**
@@ -627,7 +718,7 @@ class ZaiusClient
     }
 
     /**
-     * Check if it is not false, 200, 202 or 404
+     * Check if it is not false, 200, 201, 202 or 404
      *
      * @param $result
      * @param $info
@@ -635,6 +726,21 @@ class ZaiusClient
      */
     private function showException($result, $info)
     {
-        return ($result === false || ($info['http_code'] != 200 && $info['http_code'] != 202 && $info['http_code'] != 404));
+        return ($result === false || ($info['http_code'] != 200 && $info['http_code'] != 201 && $info['http_code'] != 202 && $info['http_code'] != 404));
+    }
+
+    /**
+     * Get date forward (e.g. $time = +5 minutes)
+     *
+     * @param null $time
+     * @param string $format
+     * @return false|string
+     */
+    private function get_date($time=null, $format='Y-m-d H:i:s')
+    {
+        if (empty($time)) {
+            return date($format);
+        }
+        return date($format, strtotime($time));
     }
 }
