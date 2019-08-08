@@ -466,7 +466,7 @@ class ZaiusClient
     protected function process($data, $url, $method, $queue)
     {
         if ($queue) {
-            return \DJJob::enqueue(new Job($this->apiKey, $data, $url, $method));
+            return $this->enqueue(new Job($this->apiKey, $parameters, $url, $method));
         } else {
             return $this->post($data, $url, $method);
         }
@@ -529,7 +529,7 @@ class ZaiusClient
     public function call($parameters, $method, $url, $queue = false)
     {
         if ($queue) {
-            return \DJJob::enqueue(new Job($this->apiKey, $parameters, $url, $method));
+            return $this->enqueue(new Job($this->apiKey, $parameters, $url, $method));
         } else {
             $attempts = $this->removeAttempts($parameters, true);
             $parameters = $this->removeAttempts($parameters);
@@ -572,7 +572,7 @@ class ZaiusClient
 
             if ($this->showException($result, $info)) {
                 $customErrorMessage = false;
-                if ($info['http_code'] == 500) {
+                if ($info['http_code'] >= 500) {
                     $retryLater = $this->retryLater(["+10 seconds", "+30 seconds", "+1 minute", "+5 minutes"], $attempts, $this->apiKey, $parameters, $url, $method);
                     if (!$retryLater) {
                         $customErrorMessage = 'FAILURE posting to Zaius, repeated 5xx error codes. No further attempts will be made. Raw request:'.$curl;
