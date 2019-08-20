@@ -726,7 +726,7 @@ class ZaiusClient
             return false;
         }
         if(!$returnType) {
-            return ($info['http_code'] >= 200 && $info['http_code'] < 300);
+            return !($info['http_code'] >= 200 && $info['http_code'] < 300);
         }
         switch ($info['http_code']){
             case ($info['http_code'] < 200):
