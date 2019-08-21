@@ -2,8 +2,11 @@
 
 namespace ZaiusSDK;
 
+use GuzzleHttp\Client;
 use ZaiusSDK\Zaius\Job;
 use ZaiusSDK\Zaius\S3\S3Client;
+use ZaiusSDK\Zaius\HttpClients\CurlHttpClient;
+use ZaiusSDK\Zaius\HttpClients\GuzzleHttpClient;
 
 /**
  * Class ZaiusClient
@@ -484,37 +487,22 @@ class ZaiusClient
         if (count($data) > self::MAX_BATCH_SIZE) {
             throw new ZaiusException("Cannot post more than ".self::MAX_BATCH_SIZE.' objects');
         }
+
         $jsonData = json_encode($data);
         $length = strlen($jsonData);
 
-        $curl = curl_init();
+        $headers = [
+            'Content-Type' => 'application/json',
+            'Content-Length' => $length
+        ];
 
-        $headers = array(
-            'Content-Type: application/json',
-            "Content-Length: $length",
-        );
         if ($this->apiKey) {
-            $headers[] = 'x-api-key: '.$this->apiKey;
+            $headers = array_merge(['x-api-key' => $this->apiKey], $headers);
         }
 
-        curl_setopt_array($curl, array(
-            CURLOPT_URL            => $url,
-            CURLOPT_CUSTOMREQUEST  => $method,
-            CURLOPT_POSTFIELDS     => $jsonData,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER     => $headers,
-            CURLOPT_CONNECTTIMEOUT => $this->timeout,
-            CURLOPT_TIMEOUT => $this->timeout
-        ));
+        $curl = new CurlHttpClient();
+        $result = $curl->send($url, $method, $jsonData, $headers, $this->timeout);
 
-        $result = curl_exec($curl);
-        $info = curl_getinfo($curl);
-        if ($this->showException($result, $info)) {
-            $error = curl_error($curl);
-            throw new ZaiusException("Failed
-             to $method to Zaius. Request: $url - $jsonData. Error: $error . Http code {$info['http_code']}. Raw response $result");
-        }
-        curl_close($curl);
         return json_decode($result, true);
     }
 
@@ -526,7 +514,7 @@ class ZaiusClient
      * @return bool|string|null
      * @throws ZaiusException
      */
-    public function call($parameters, $method, $url, $queue = false)
+    public function call($parameters, $method, $url, $queue = false, $async = false)
     {
         if ($queue) {
             return $this->enqueue(new Job($this->apiKey, $parameters, $url, $method));
@@ -535,55 +523,43 @@ class ZaiusClient
             $parameters = $this->removeAttempts($parameters);
 
             $method = strtoupper($method);
-            $curl = curl_init();
 
-            $headers = array(
-                'Content-Type: application/json'
-            );
+            $headers = ['Content-Type' => 'application/json'];
+
             if ($this->apiKey) {
-                $headers[] = 'x-api-key: '.$this->apiKey;
+                $headers = array_merge(['x-api-key' => $this->apiKey], $headers);
             }
 
             if ($method == 'GET' && count($parameters)) {
                 $url.="?".http_build_query($parameters);
             }
 
-            $optionsArray = array(
-                CURLOPT_URL            => $url,
-                CURLOPT_CUSTOMREQUEST  => $method,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_HTTPHEADER     => $headers,
-                CURLOPT_CONNECTTIMEOUT => $this->timeout,
-                CURLOPT_TIMEOUT => $this->timeout
-            );
-
             if (in_array($method, ['POST','PUT'])) {
                 $jsonData = json_encode($parameters);
                 $length = strlen($jsonData);
-                $headers[]= "Content-Length: $length";
-                $optionsArray[CURLOPT_POSTFIELDS] = $jsonData;
+                $headers = array_merge(['Content-Length' => $length]);
             }
 
-            curl_setopt_array($curl, $optionsArray);
+            $curl = new CurlHttpClient();
+            $curl->openConnection($url, $method, $body, $headers, $timeOut);
+            $result = $curl->sendRequest(true);
+            $httpCode = $curl->getHttpCode();
 
-
-            $result = curl_exec($curl);
-            $info = curl_getinfo($curl);
-
-            if ($this->showException($result, $info)) {
+            if ($this->showException($result, $httpCode)) {
                 $customErrorMessage = false;
-                if ($info['http_code'] >= 500) {
+                if ($httpCode >= 500) {
                     $retryLater = $this->retryLater(["+10 seconds", "+30 seconds", "+1 minute", "+5 minutes"], $attempts, $this->apiKey, $parameters, $url, $method);
                     if (!$retryLater) {
                         $customErrorMessage = 'FAILURE posting to Zaius, repeated 5xx error codes. No further attempts will be made. Raw request:'.$curl;
                     }
                 }
-                $error = curl_error($curl);
-                curl_close($curl);
-                throw new ZaiusException($this->zaiusExceptionMessage($customErrorMessage, $method, $error, $info, $result));
+                $error = $curl->getCurlError();
+
+                throw new ZaiusException($this->zaiusExceptionMessage($customErrorMessage, $method, $error, $httpCode, $result));
             }
 
-            curl_close($curl);
+            $curl->closeConnection();
+
             return $result;
         }
     }
@@ -651,10 +627,10 @@ class ZaiusClient
      * @param $result
      * @return bool|string
      */
-    private function zaiusExceptionMessage($customErrorMessage = false, $method, $error, $info, $result)
+    private function zaiusExceptionMessage($customErrorMessage = false, $method, $error, $httpCode, $result)
     {
         if (!$customErrorMessage) {
-            return "Failed to {$method} from Zaius. Error: $error . Http code {$info['http_code']}. Raw response $result";
+            return "Failed to {$method} from Zaius. Error: {$error} . Http code {$httpCode}. Raw response {$result}";
         }
         return $customErrorMessage;
     }
@@ -678,66 +654,50 @@ class ZaiusClient
      */
     protected function get($params, $url)
     {
-        $curl = curl_init();
+        $headers = ['Content-Type' => 'application/json'];
 
-        $headers = array(
-            'Content-Type: application/json'
-        );
         if ($this->apiKey) {
-            $headers[] = 'x-api-key: '.$this->apiKey;
+            $headers = array_merge(['x-api-key' => $this->apiKey], $headers);
         }
 
         if (count($params)) {
             $url.="?".http_build_query($params);
         }
 
-        curl_setopt_array($curl, array(
-            CURLOPT_URL            => $url,
-            CURLOPT_CUSTOMREQUEST  => 'GET',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER     => $headers,
-            CURLOPT_CONNECTTIMEOUT => $this->timeout,
-            CURLOPT_TIMEOUT => $this->timeout
-        ));
-
-        $result = curl_exec($curl);
-        $info = curl_getinfo($curl);
-        curl_close($curl);
-        if ($this->showException($result, $info)) {
-            $error = curl_error($curl);
-            throw new ZaiusException("Failed to GET from Zaius. Error: $error . Http code {$info['http_code']}. Raw response $result");
-        }
+        $curl = new CurlHttpClient();
+        $result = $curl->send($url, 'GET', '', $headers, $this->timeout);
 
         return $result;
-
     }
 
     /**
      * Check if it is false or not a HTTP 200
      * or return the type (e.g. 404 will return 400)
      *
+     * ToDo: Abstract to a new class
+     *
      * @param $result
      * @param $info
      * @return bool
      */
-    private function showException($result, $info, $returnType = false)
+    private function showException($result, $httpCode, $returnType = false)
     {
-        if(!$result){
+        if (!$result) {
             return false;
         }
-        if(!$returnType) {
-            return ($info['http_code'] >= 200 && $info['http_code'] < 300);
+        if (!$returnType) {
+            return !($httpCode >= 200 && $httpCode < 300);
         }
-        switch ($info['http_code']){
-            case ($info['http_code'] < 200):
+        switch ($httpCode) {
+            case ($httpCode < 200):
                 return 100;
-            case ($info['http_code'] >= 200 && $info['http_code'] < 300):
+            case ($httpCode >= 200 && $httpCode < 300):
                 return 200;
-            case ($info['http_code'] >= 300 && $info['http_code'] < 400):
+            case ($httpCode >= 300 && $httpCode < 400):
                 return 300;
-            case ($info['http_code'] >= 400 && $info['http_code'] < 500):
+            case ($httpCode >= 400 && $httpCode < 500):
                 return 400;
-            case ($info['http_code'] >= 500):
+            case ($httpCode >= 500):
                 return 500;
         }
     }

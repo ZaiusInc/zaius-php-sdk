@@ -35,6 +35,6 @@ class Job {
      */
     public function perform() {
         $zaiusClient = new ZaiusClient($this->apiKey);
-        return $zaiusClient->call($this->data,$this->method,$this->url);
+        return $zaiusClient->call($this->data,$this->method,$this->url, false, true);
     }
 }
