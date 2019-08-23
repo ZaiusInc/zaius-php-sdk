@@ -4,7 +4,8 @@ namespace ZaiusSDK\Zaius;
 
 use ZaiusSDK\ZaiusClient;
 
-class Job {
+class Job
+{
 
     protected $apiKey;
 
@@ -16,6 +17,7 @@ class Job {
 
     /**
      * Job constructor.
+     *
      * @param $apiKey
      * @param $data
      * @param $url
@@ -33,8 +35,9 @@ class Job {
      * @return bool|string|null
      * @throws \ZaiusSDK\ZaiusException
      */
-    public function perform() {
+    public function perform() 
+    {
         $zaiusClient = new ZaiusClient($this->apiKey);
-        return $zaiusClient->call($this->data,$this->method,$this->url, false, true);
+        return $zaiusClient->call($this->data, $this->method, $this->url, false);
     }
 }

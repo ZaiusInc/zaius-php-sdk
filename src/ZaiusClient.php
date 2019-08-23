@@ -2,34 +2,41 @@
 
 namespace ZaiusSDK;
 
-use GuzzleHttp\Client;
 use ZaiusSDK\Zaius\Job;
 use ZaiusSDK\Zaius\S3\S3Client;
 use ZaiusSDK\Zaius\HttpClients\CurlHttpClient;
-use ZaiusSDK\Zaius\HttpClients\GuzzleHttpClient;
 
 /**
  * Class ZaiusClient
+ *
  * @package ZaiusSDK
  */
 class ZaiusClient
 {
     const MAX_BATCH_SIZE = 1000;
 
-    /** @var string */
+    /**
+     * @var string 
+     */
     protected $apiKey;
 
-    /** @var string */
+    /**
+     * @var string 
+     */
     protected $privateKey;
 
-    /** @var int  */
+    /**
+     * @var int  
+     */
     protected $timeout;
 
     const API_URL_V3 = 'http://api.zaius.com/v3';
 
     /**
      * ZaiusClient constructor.
+     *
      * @param string $apiKey
+     * @param string $privateKey
      * @param int $timeout
      */
     public function __construct($apiKey = '', $privateKey = '', $timeout = 30)
@@ -41,7 +48,7 @@ class ZaiusClient
 
     /**
      * @param $customers
-     * @param bool $queue
+     * @param bool      $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -75,7 +82,7 @@ class ZaiusClient
 
     /**
      * @param $events
-     * @param bool $queue
+     * @param bool   $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -129,7 +136,7 @@ class ZaiusClient
     /**
      * @param $optedIn
      * @param $email
-     * @param bool $queue
+     * @param bool    $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -141,7 +148,7 @@ class ZaiusClient
 
     /**
      * @param $subscriptions
-     * @param bool $queue
+     * @param bool          $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -152,10 +159,10 @@ class ZaiusClient
     }
 
     /**
-     * @param array $objects
+     * @param array  $objects
      * @param string $format
      * @param string $delimiter
-     * @param bool $queue
+     * @param bool   $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -173,10 +180,10 @@ class ZaiusClient
     }
 
     /**
-     * @param array $select
+     * @param array  $select
      * @param string $format
      * @param string $delimiter
-     * @param bool $queue
+     * @param bool   $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -204,10 +211,10 @@ class ZaiusClient
 
     /**
      * @param $requesterEmail
-     * @param string $email
-     * @param string $phone
-     * @param string $vuid
-     * @param bool $queue
+     * @param string         $email
+     * @param string         $phone
+     * @param string         $vuid
+     * @param bool           $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -258,10 +265,10 @@ class ZaiusClient
     /**
      * @param $name
      * @param $displayName
-     * @param string $alias
+     * @param string      $alias
      * @param $fields
      * @param $relations
-     * @param bool $queue
+     * @param bool        $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -312,8 +319,8 @@ class ZaiusClient
      * @param $fieldName
      * @param $type
      * @param $displayName
-     * @param string $description
-     * @param bool $queue
+     * @param string      $description
+     * @param bool        $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -357,7 +364,7 @@ class ZaiusClient
     /**
      * @param $objectName
      * @param $data
-     * @param bool $queue
+     * @param bool       $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -369,7 +376,7 @@ class ZaiusClient
 
     /**
      * @param $products
-     * @param bool $queue
+     * @param bool     $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -381,7 +388,7 @@ class ZaiusClient
 
     /**
      * @param $orders
-     * @param bool $queue
+     * @param bool   $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -395,7 +402,7 @@ class ZaiusClient
     /**
      * @param $objectName
      * @param $relations
-     * @param bool $queue
+     * @param bool       $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -420,7 +427,7 @@ class ZaiusClient
     /**
      * @param $listId
      * @param $newName
-     * @param bool $queue
+     * @param bool    $queue
      * @return mixed
      * @throws ZaiusException
      */
@@ -447,7 +454,7 @@ class ZaiusClient
 
     /**
      * @param $credentials
-     * @param string $jobTable
+     * @param string      $jobTable
      */
     public function setQueueDatabaseCredentials($credentials, $jobTable='')
     {
@@ -468,11 +475,15 @@ class ZaiusClient
      */
     protected function process($data, $url, $method, $queue)
     {
-        if ($queue) {
-            return $this->enqueue(new Job($this->apiKey, $parameters, $url, $method));
-        } else {
+        try{
+            if ($queue) {
+                return $this->enqueue(new Job($this->apiKey, $data, $url, $method));
+            }
             return $this->post($data, $url, $method);
+        }catch (ZaiusException $exception){
+            return $exception->getMessage();
         }
+
     }
 
     /**
@@ -499,25 +510,27 @@ class ZaiusClient
         if ($this->apiKey) {
             $headers = array_merge(['x-api-key' => $this->apiKey], $headers);
         }
-
+        
         $curl = new CurlHttpClient();
-        $result = $curl->send($url, $method, $jsonData, $headers, $this->timeout);
+        $result = $curl->sendAsync($url, $method, $jsonData, $headers);
 
-        return json_decode($result, true);
+        return $result;
     }
 
     /**
      * @param $parameters
      * @param $method
      * @param $url
-     * @param bool $queue
+     * @param bool       $queue
      * @return bool|string|null
      * @throws ZaiusException
      */
-    public function call($parameters, $method, $url, $queue = false, $async = false)
+    public function call($parameters, $method, $url, $queue = false)
     {
         if ($queue) {
-            return $this->enqueue(new Job($this->apiKey, $parameters, $url, $method));
+            return $this->enqueue(
+                new Job($this->apiKey, $parameters, $url, $method)
+            );
         } else {
             $attempts = $this->removeAttempts($parameters, true);
             $parameters = $this->removeAttempts($parameters);
@@ -534,6 +547,7 @@ class ZaiusClient
                 $url.="?".http_build_query($parameters);
             }
 
+            $jsonData = '';
             if (in_array($method, ['POST','PUT'])) {
                 $jsonData = json_encode($parameters);
                 $length = strlen($jsonData);
@@ -541,7 +555,8 @@ class ZaiusClient
             }
 
             $curl = new CurlHttpClient();
-            $curl->openConnection($url, $method, $body, $headers, $timeOut);
+            /** @var CurlHttpClient $curl */
+            $curl->openConnection($url, $method, $jsonData, $headers, $this->timeout);
             $result = $curl->sendRequest(true);
             $httpCode = $curl->getHttpCode();
 
@@ -568,8 +583,8 @@ class ZaiusClient
      * Remove the attempts from the parameters or
      * Return the attempts number
      *
-     * @param $parameters
-     * @param bool $returnAttempts
+     * @param  $parameters
+     * @param  bool $returnAttempts
      * @return int|mixed
      */
     private function removeAttempts($parameters, $returnAttempts = false)
@@ -587,7 +602,7 @@ class ZaiusClient
     /**
      * Set when retry the same Job
      *
-     * @param array $time
+     * @param array      $time
      * @param $apiKey
      * @param $parameters
      * @param $url
@@ -620,11 +635,11 @@ class ZaiusClient
     /**
      * Return a custom or the default message
      *
-     * @param bool $customErrorMessage
-     * @param $method
-     * @param $error
-     * @param $info
-     * @param $result
+     * @param  bool   $customErrorMessage
+     * @param  $method
+     * @param  $error
+     * @param  $info
+     * @param  $result
      * @return bool|string
      */
     private function zaiusExceptionMessage($customErrorMessage = false, $method, $error, $httpCode, $result)
@@ -637,8 +652,8 @@ class ZaiusClient
     /**
      * Enqueue a new Job
      *
-     * @param $handler
-     * @param null $run_at
+     * @param  $handler
+     * @param  null    $run_at
      * @return bool|string
      */
     private function enqueue($handler, $run_at = null)
@@ -676,8 +691,8 @@ class ZaiusClient
      *
      * ToDo: Abstract to a new class
      *
-     * @param $result
-     * @param $info
+     * @param  $result
+     * @param  $info
      * @return bool
      */
     private function showException($result, $httpCode, $returnType = false)
@@ -689,24 +704,24 @@ class ZaiusClient
             return !($httpCode >= 200 && $httpCode < 300);
         }
         switch ($httpCode) {
-            case ($httpCode < 200):
-                return 100;
-            case ($httpCode >= 200 && $httpCode < 300):
-                return 200;
-            case ($httpCode >= 300 && $httpCode < 400):
-                return 300;
-            case ($httpCode >= 400 && $httpCode < 500):
-                return 400;
-            case ($httpCode >= 500):
-                return 500;
+        case ($httpCode < 200):
+            return 100;
+        case ($httpCode >= 200 && $httpCode < 300):
+            return 200;
+        case ($httpCode >= 300 && $httpCode < 400):
+            return 300;
+        case ($httpCode >= 400 && $httpCode < 500):
+            return 400;
+        case ($httpCode >= 500):
+            return 500;
         }
     }
 
     /**
      * Get date forward (e.g. $time = +5 minutes)
      *
-     * @param null $time
-     * @param string $format
+     * @param  null   $time
+     * @param  string $format
      * @return false|string
      */
     private function get_date($time=null, $format='Y-m-d H:i:s')

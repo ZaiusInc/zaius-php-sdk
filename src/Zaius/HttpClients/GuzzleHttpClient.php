@@ -3,11 +3,11 @@
 namespace ZaiusSDK\Zaius\HttpClients;
 
 use GuzzleHttp\Client;
-use ZaiusSDK\ZaiusException;
-use GuzzleHttp\Psr7\Request;
-use GuzzleHttp\Psr7\Response as Psr7Response;
-use GuzzleHttp\Exception\RequestException;
 
+/**
+ * Class GuzzleHttpClient
+ * @package ZaiusSDK\Zaius\HttpClients
+ */
 class GuzzleHttpClient
 {
     /**
@@ -23,31 +23,37 @@ class GuzzleHttpClient
         $this->guzzleClient = $guzzleClient ?: new Client();
     }
 
-    public function send($url, $method, $body, $headers, $timeout, $errorMsg)
+    /**
+     * @param $url
+     * @param $method
+     * @param $body
+     * @param $headers
+     * @param $timeout
+     * @return string
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function send($url, $method, $body, $headers, $timeout)
     {
         $options = [
             'headers' => $headers,
             'body' => $body,
-            'timeout' => $timeOut,
-            'connect_timeout' => $timeOut,
+            'timeout' => $timeout,
+            'connect_timeout' => $timeout,
         ];
 
         $request = $this->guzzleClient->createRequest($method, $url, $options);
 
         try {
-            $response = $this->guzzleClient->send($request);
-        } catch (RequestException $e) {
-            $result = $e->getResponse();
-            $error = $e->getMessage();
-            $httpCode = $e->getCode();
-            throw new ZaiusException(
-                "Failed to {$method} to Zaius. Request: {$url} - {$body}. Error: {$error} . Http code {$httpCode}. Raw response {$result}"
-            );
+            $rawResponse = $this->guzzleClient->send($request);
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            $rawResponse = $e->getResponse();
+            new \ZaiusSDK\ZaiusException($e->getMessage());
         }
+
         $rawHeaders = $this->getHeadersAsString($rawResponse);
         $rawBody = $rawResponse->getBody();
         $httpStatusCode = $rawResponse->getStatusCode();
-        return $response;
+        return $httpStatusCode.$rawBody.$rawHeaders;
     }
 
     /**

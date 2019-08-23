@@ -63,6 +63,25 @@ class CurlHttpClient
     }
 
     /**
+     * @param $url
+     * @param $method
+     * @param $body
+     * @param array $headers
+     * @return bool
+     */
+    public function sendAsync($url, $method, $body, array $headers)
+    {
+        $cmd = "curl -X ".$method;
+        foreach ($this->compileRequestHeaders($headers) as $header) {
+            $cmd .= " -H '".$header."'";
+        }
+        $cmd .= " -d '" . $body . "' " . "'" . $url . "'";
+        $cmd .= " > /dev/null 2>&1 &";
+        exec($cmd, $output, $exit);
+        return $exit == 0;
+    }
+
+    /**
      * Opens a new curl connection.
      *
      * @param string $url     The endpoint to send the request to.
