@@ -1,12 +1,12 @@
 <?php
 
-namespace ZaiusSDK\Zaius\HttpClients;
+namespace ZaiusSDK\HttpClients;
 
 use ZaiusSDK\ZaiusException;
 
 /**
  * Class CurlHttpClient
- * @package ZaiusSDK\Zaius\HttpClients
+ * @package ZaiusSDK\HttpClients
  */
 class CurlHttpClient
 {
@@ -50,14 +50,13 @@ class CurlHttpClient
         $result = $this->sendRequest(true);
 
         $httpCode = $this->curl->getinfo(CURLINFO_HTTP_CODE);
-
+        var_dump($result);exit;
         if ($this->showException($result, $httpCode)) {
             $error = $this->curl->error();
             throw new ZaiusException(
                 "Failed to {$method} to Zaius. Request: {$url} - {$body}. Error: {$error} . Http code {$httpCode}. Raw response {$result}"
             );
         }
-
         $this->closeConnection();
         return $result;
     }

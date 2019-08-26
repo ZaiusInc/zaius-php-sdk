@@ -1,12 +1,14 @@
 <?php
 
-namespace ZaiusSDK\Zaius\HttpClients;
+namespace ZaiusSDK\HttpClients;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Psr7\Request;
 
 /**
  * Class GuzzleHttpClient
- * @package ZaiusSDK\Zaius\HttpClients
+ * @package ZaiusSDK\HttpClients
  */
 class GuzzleHttpClient
 {
@@ -41,19 +43,14 @@ class GuzzleHttpClient
             'connect_timeout' => $timeout,
         ];
 
-        $request = $this->guzzleClient->createRequest($method, $url, $options);
-
         try {
-            $rawResponse = $this->guzzleClient->send($request);
+            $rawResponse = $this->guzzleClient->request($method, $url, $options);
         } catch (\GuzzleHttp\Exception\RequestException $e) {
             $rawResponse = $e->getResponse();
             new \ZaiusSDK\ZaiusException($e->getMessage());
         }
 
-        $rawHeaders = $this->getHeadersAsString($rawResponse);
-        $rawBody = $rawResponse->getBody();
-        $httpStatusCode = $rawResponse->getStatusCode();
-        return $httpStatusCode.$rawBody.$rawHeaders;
+        return $rawResponse->getBody()->getContents();
     }
 
     /**
@@ -63,7 +60,7 @@ class GuzzleHttpClient
      *
      * @return string
      */
-    public function getHeadersAsString(ResponseInterface $response)
+    public function getHeadersAsString($response)
     {
         $headers = $response->getHeaders();
         $rawHeaders = [];

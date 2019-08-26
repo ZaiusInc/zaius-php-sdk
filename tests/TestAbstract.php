@@ -5,7 +5,9 @@ namespace ZaiusSDK\Test;
 use PHPUnit\Framework\TestCase;
 use ZaiusSDK\ZaiusClient;
 
-class TestAbstract extends TestCase {
+class TestAbstract extends TestCase
+{
+
     protected function getZaiusClient($apiKey='',$timeout=30) {
         return new ZaiusClient($apiKey,$timeout);
     }

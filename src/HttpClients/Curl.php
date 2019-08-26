@@ -1,10 +1,10 @@
 <?php
 
-namespace ZaiusSDK\Zaius\HttpClients;
+namespace ZaiusSDK\HttpClients;
 
 /**
  * Class Curl
- * @package ZaiusSDK\Zaius\HttpClients
+ * @package ZaiusSDK\HttpClients
  */
 class Curl
 {

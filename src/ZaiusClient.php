@@ -2,9 +2,10 @@
 
 namespace ZaiusSDK;
 
+use ZaiusSDK\HttpClients\GuzzleHttpClient;
 use ZaiusSDK\Zaius\Job;
 use ZaiusSDK\Zaius\S3\S3Client;
-use ZaiusSDK\Zaius\HttpClients\CurlHttpClient;
+use ZaiusSDK\HttpClients\CurlHttpClient;
 
 /**
  * Class ZaiusClient
@@ -155,7 +156,12 @@ class ZaiusClient
     public function updateSubscription($subscriptions, $queue=false)
     {
         $subscriptions = $this->prepareForPost($subscriptions);
-        return $this->process($subscriptions, self::API_URL_V3.'/lists/subscriptions', 'POST', $queue);
+        return $this->process(
+            $subscriptions,
+            self::API_URL_V3.'/lists/subscriptions',
+            'POST',
+            $queue
+        );
     }
 
     /**
@@ -514,6 +520,7 @@ class ZaiusClient
         $curl = new CurlHttpClient();
         $result = $curl->sendAsync($url, $method, $jsonData, $headers);
 
+
         return $result;
     }
 
@@ -679,8 +686,8 @@ class ZaiusClient
             $url.="?".http_build_query($params);
         }
 
-        $curl = new CurlHttpClient();
-        $result = $curl->send($url, 'GET', '', $headers, $this->timeout);
+        $request = new GuzzleHttpClient();
+        $result = $request->send($url, 'GET', '', $headers, $this->timeout);
 
         return $result;
     }
