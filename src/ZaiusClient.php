@@ -2,6 +2,10 @@
 
 namespace ZaiusSDK;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Pool;
+use GuzzleHttp\Psr7\Response;
 use ZaiusSDK\HttpClients\GuzzleHttpClient;
 use ZaiusSDK\Zaius\Job;
 use ZaiusSDK\Zaius\S3\S3Client;
@@ -22,11 +26,6 @@ class ZaiusClient
     protected $apiKey;
 
     /**
-     * @var string 
-     */
-    protected $privateKey;
-
-    /**
      * @var int  
      */
     protected $timeout;
@@ -38,12 +37,11 @@ class ZaiusClient
      *
      * @param string $apiKey
      * @param string $privateKey
-     * @param int $timeout
+     * @param int    $timeout
      */
     public function __construct($apiKey = '', $privateKey = '', $timeout = 30)
     {
-        $this->apiKey = $apiKey;
-        $this->privateKey = $privateKey;
+        $this->apiKey = !isset($privateKey) ? $privateKey : $apiKey;
         $this->timeout = $timeout;
     }
 
@@ -55,13 +53,20 @@ class ZaiusClient
      */
     public function postCustomer($customers, $queue=false)
     {
-        $this->apiKey = $this->privateKey;
+        $realCustomers = [];
         $customers = $this->prepareForPost($customers);
-        $realCustomers = array();
         foreach ($customers as $customer) {
             $realCustomers['attributes'] = $customer;
         }
-        return $this->process($realCustomers, self::API_URL_V3.'/profiles', 'POST', $queue);
+
+        $request = $this->request(
+            'POST',
+            self::API_URL_V3.'/profiles',
+            $realCustomers,
+            $queue
+        );
+
+        return $this->process($request);
     }
 
     /**
@@ -71,7 +76,6 @@ class ZaiusClient
      */
     public function getCustomer($filters)
     {
-        $this->apiKey = $this->privateKey;
         $result = $this->get($filters, self::API_URL_V3.'/profiles');
         if ($result === null) {
             return $result;
@@ -89,8 +93,14 @@ class ZaiusClient
      */
     public function postEvent($events, $queue=false)
     {
-        $events = $this->prepareForPost($events);
-        return $this->process($events, self::API_URL_V3.'/events', 'POST', $queue);
+        $request = $this->request(
+            'POST',
+            self::API_URL_V3.'/events',
+            $events,
+            $queue
+        );
+
+        return $this->process($request);
     }
 
     /**
@@ -104,8 +114,15 @@ class ZaiusClient
         if (!isset($list['name'])) {
             throw new ZaiusException("You must specify the name of the list");
         }
-        $this->apiKey = $this->privateKey;
-        return $this->process($list, self::API_URL_V3.'/lists', 'POST', $queue);
+        
+        $request = $this->request(
+            'POST',
+            self::API_URL_V3.'/lists',
+            $list,
+            $queue
+        );
+
+        return $this->process($request);
     }
 
     /**
@@ -144,7 +161,14 @@ class ZaiusClient
     public function updateChannelOptIn($optedIn, $email, $queue=false)
     {
         $data = ['opted_in'=>$optedIn,'email'=>$email];
-        return $this->process($data, self::API_URL_V3.'/lists/subscriptions', 'POST', $queue);
+        $request = $this->request(
+            'POST',
+            self::API_URL_V3.'/lists/subscriptions',
+            $data,
+            $queue
+        );
+
+        return $this->process($request);
     }
 
     /**
@@ -155,13 +179,14 @@ class ZaiusClient
      */
     public function updateSubscription($subscriptions, $queue=false)
     {
-        $subscriptions = $this->prepareForPost($subscriptions);
-        return $this->process(
-            $subscriptions,
-            self::API_URL_V3.'/lists/subscriptions',
+        $request = $this->request(
             'POST',
+            self::API_URL_V3.'/lists/subscriptions',
+            $subscriptions,
             $queue
         );
+
+        return $this->process($request);
     }
 
     /**
@@ -181,8 +206,14 @@ class ZaiusClient
         $data['format'] = $format;
         $data['delimiter'] = $delimiter;
 
-        $this->apiKey = $this->privateKey;
-        return $this->process($data, self::API_URL_V3.'/exports', 'POST', $queue, 'POST', $queue);
+        $request = $this->request(
+            'POST',
+            self::API_URL_V3.'/exports',
+            $data,
+            $queue
+        );
+
+        return $this->process($request);
     }
 
     /**
@@ -193,15 +224,26 @@ class ZaiusClient
      * @return mixed
      * @throws ZaiusException
      */
-    public function exportObjectsWithFilters($select = array(), $format = 'csv', $delimiter='comma', $queue=false)
-    {
-        $data = [];
-        $data['select'] = $select;
-        $data['format'] = $format;
-        $data['delimiter'] = $delimiter;
+    public function exportObjectsWithFilters(
+        $select = [],
+        $format = 'csv',
+        $delimiter='comma',
+        $queue=false
+    ) {
+        $data = [
+            'select' => $select,
+            'format' => $format,
+            'delimiter' => $delimiter
+        ];
 
-        $this->apiKey = $this->privateKey;
-        return $this->process($data, self::API_URL_V3.'/exports', 'POST', $queue);
+        $request = $this->request(
+            'POST',
+            self::API_URL_V3.'/exports',
+            $data,
+            $queue
+        );
+
+        return $this->process($request);
     }
 
     /**
@@ -211,7 +253,6 @@ class ZaiusClient
      */
     public function getExportStatus($exportId)
     {
-        $this->apiKey = $this->privateKey;
         return $this->get([], self::API_URL_V3.'/exports/'.$exportId);
     }
 
@@ -224,10 +265,17 @@ class ZaiusClient
      * @return mixed
      * @throws ZaiusException
      */
-    public function optOut($requesterEmail, $email="", $phone="", $vuid="", $queue=false)
-    {
+    public function optOut(
+        $requesterEmail,
+        $email="",
+        $phone="",
+        $vuid="",
+        $queue=false
+    ) {
         if (!$email && !$phone && !$vuid) {
-            throw new ZaiusException("One of the email, phone or vuid fields must be specified");
+            throw new ZaiusException(
+                "One of the email, phone or vuid fields must be specified"
+            );
         }
 
         $data = [];
@@ -242,7 +290,14 @@ class ZaiusClient
             $data['vuid'] = $vuid;
         }
 
-        return $this->process($data, self::API_URL_V3.'/optout', 'POST', $queue);
+        $request = $this->request(
+            'POST',
+            self::API_URL_V3.'/optout',
+            $data,
+            $queue
+        );
+
+        return $this->process($request);
     }
 
     /**
@@ -251,7 +306,6 @@ class ZaiusClient
      */
     public function getObjects()
     {
-        $this->apiKey = $this->privateKey;
         $data = $this->get([], self::API_URL_V3.'/schema/objects');
         return json_decode($data, true);
     }
@@ -263,7 +317,6 @@ class ZaiusClient
      */
     public function getObject($objectName)
     {
-        $this->apiKey = $this->privateKey;
         $data = $this->get([], self::API_URL_V3.'/schema/objects/'.$objectName);
         return json_decode($data, true);
     }
@@ -278,17 +331,30 @@ class ZaiusClient
      * @return mixed
      * @throws ZaiusException
      */
-    public function createObjectSchema($name, $displayName, $alias='', $fields, $relations, $queue=false)
-    {
-        $this->apiKey = $this->privateKey;
-        $data = [];
-        $data['name'] = $name;
-        $data['display_name'] = $displayName;
-        $data['alias'] = $alias;
-        $data['fields'] = $fields;
-        $data['relations'] = $relations;
+    public function createObjectSchema(
+        $name,
+        $displayName,
+        $alias='',
+        $fields='',
+        $relations='',
+        $queue=false
+    ) {
+        $data = [
+             'name' => $name,
+             'display_name' => $displayName,
+             'alias' => $alias,
+             'fields' => $fields,
+             'relations' => $relations,
+         ];
 
-        return $this->process($data, self::API_URL_V3.'/schema/objects', 'POST', $queue);
+        $request = $this->request(
+            'POST',
+            self::API_URL_V3.'/schema/objects',
+            $data,
+            $queue
+        );
+
+        return $this->process($request);
     }
 
     /**
@@ -298,7 +364,6 @@ class ZaiusClient
      */
     public function getObjectFields($objectName)
     {
-        $this->apiKey = $this->privateKey;
         $data = $this->get([], self::API_URL_V3.'/schema/objects/'.$objectName.'/fields');
         return json_decode($data, true);
     }
@@ -311,7 +376,6 @@ class ZaiusClient
      */
     public function getObjectField($objectName, $fieldName)
     {
-        $this->apiKey = $this->privateKey;
         $data = [];
         $data['object_name'] = $objectName;
         $data['field_name'] = $fieldName;
@@ -328,18 +392,31 @@ class ZaiusClient
      * @param string      $description
      * @param bool        $queue
      * @return mixed
-     * @throws ZaiusException
      */
-    public function createObjectField($objectName, $fieldName, $type, $displayName, $description='', $queue=false)
-    {
-        $this->apiKey = $this->privateKey;
-        $data = [];
-        $data['name'] = $fieldName;
-        $data['type'] = $type;
-        $data['display_name'] = $displayName;
-        $data['description'] = $description;
+    public function createObjectField(
+        $objectName,
+        $fieldName,
+        $type,
+        $displayName,
+        $description='',
+        $queue=false
+    ) {
 
-        return $this->process($data, self::API_URL_V3.'/schema/objects/'.$objectName.'/fields', 'POST', $queue);
+        $data = [
+            'name' => $fieldName,
+            'type' => $type,
+            'display_name' => $displayName,
+            'description' => $description,
+        ];
+
+        $request = $this->request(
+            'POST',
+            self::API_URL_V3.'/schema/objects/'.$objectName.'/fields',
+            $data,
+            $queue
+        );
+
+        return $this->process($request);
     }
 
     /**
@@ -349,7 +426,6 @@ class ZaiusClient
      */
     public function getRelations($objectName)
     {
-        $this->apiKey = $this->privateKey;
         $data = $this->get([], self::API_URL_V3.'/schema/objects/'.$objectName.'/relations');
         return json_decode($data, true);
     }
@@ -362,7 +438,6 @@ class ZaiusClient
      */
     public function getRelation($objectName, $relationName)
     {
-        $this->apiKey = $this->privateKey;
         $data = $this->get([], self::API_URL_V3.'/schema/objects/'.$objectName.'/relations/'.$relationName);
         return json_decode($data, true);
     }
@@ -376,7 +451,14 @@ class ZaiusClient
      */
     public function postObject($objectName, $data, $queue=false)
     {
-        return $this->process($data, self::API_URL_V3.'/objects/'.$objectName, 'POST', $queue);
+        $request = $this->request(
+            'POST',
+            self::API_URL_V3.'/objects/'.$objectName,
+            $data,
+            $queue
+        );
+
+        return $this->process($request);
     }
 
 
@@ -388,8 +470,14 @@ class ZaiusClient
      */
     public function postProduct($products, $queue=false)
     {
-        $data = $this->prepareForPost($products);
-        return $this->process($data, self::API_URL_V3.'/objects/products', 'POST', $queue);
+        $request = $this->request(
+            'POST',
+            self::API_URL_V3.'/objects/products',
+            $products,
+            $queue
+        );
+
+        return $this->process($request);
     }
 
     /**
@@ -400,8 +488,14 @@ class ZaiusClient
      */
     public function postOrder($orders, $queue=false)
     {
-        $data = $this->prepareForPost($orders);
-        return $this->process($data, self::API_URL_V3.'/objects/orders', 'POST', $queue);
+        $request = $this->request(
+            'POST',
+            self::API_URL_V3.'/objects/orders',
+            $orders,
+            $queue
+        );
+
+        return $this->process($request);
     }
 
 
@@ -414,8 +508,14 @@ class ZaiusClient
      */
     public function createRelations($objectName, $relations, $queue=false)
     {
-        $this->apiKey = $this->privateKey;
-        return $this->process($relations, self::API_URL_V3.'/schema/objects/'.$objectName.'/relations', 'POST', $queue);
+        $request = $this->request(
+            'POST',
+            self::API_URL_V3.'/schema/objects/'.$objectName.'/relations',
+            $relations,
+            $queue
+        );
+
+        return $this->process($request);
     }
 
 
@@ -440,19 +540,31 @@ class ZaiusClient
     public function changeListName($listId, $newName, $queue=false)
     {
         $data = ['name'=>$newName];
+        $request = $this->request(
+            'PUT',
+            self::API_URL_V3.'/lists/'.$listId,
+            $data,
+            $queue
+        );
 
-        $this->apiKey = $this->privateKey;
-        return $this->process($data, self::API_URL_V3.'/lists/'.$listId, 'PUT', $queue);
+        return $this->process($request);
     }
 
     /**
      * @param $data
      * @return array
+     * @throws ZaiusException
      */
     protected function prepareForPost($data)
     {
         if (!isset($data[0])) {
             $data = array($data);
+        }
+
+        if (count($data) > self::MAX_BATCH_SIZE) {
+            throw new ZaiusException(
+                "Cannot post more than ".self::MAX_BATCH_SIZE.' objects'
+            );
         }
 
         return $data;
@@ -472,18 +584,20 @@ class ZaiusClient
     }
 
     /**
-     * @param $data
-     * @param $url
-     * @param $method
-     * @param $queue
+     * @param ZaiusRequest $request
      * @return bool|mixed|string
-     * @throws ZaiusException
      */
-    protected function process($data, $url, $method, $queue)
+    protected function process(ZaiusRequest $request)
     {
         try{
-            if ($queue) {
-                return $this->enqueue(new Job($this->apiKey, $data, $url, $method));
+            $data = $request->getParams();
+            $url = $request->getUrl();
+            $method = $request->getMethod();
+
+            if ($request->isQueue()) {
+                return $this->enqueue(
+                    new Job($this->apiKey, $data, $url, $method)
+                );
             }
             return $this->post($data, $url, $method);
         }catch (ZaiusException $exception){
@@ -502,26 +616,55 @@ class ZaiusClient
     protected function post($data, $url, $method = 'POST')
     {
         if (count($data) > self::MAX_BATCH_SIZE) {
-            throw new ZaiusException("Cannot post more than ".self::MAX_BATCH_SIZE.' objects');
+            throw new ZaiusException(
+                "Cannot post more than ".self::MAX_BATCH_SIZE.' objects'
+            );
         }
 
         $jsonData = json_encode($data);
-        $length = strlen($jsonData);
 
-        $headers = [
-            'Content-Type' => 'application/json',
-            'Content-Length' => $length
-        ];
-
-        if ($this->apiKey) {
-            $headers = array_merge(['x-api-key' => $this->apiKey], $headers);
-        }
+        $headers = ZaiusRequest::getDefaultHeaders($this->apiKey, $data);
         
         $curl = new CurlHttpClient();
         $result = $curl->sendAsync($url, $method, $jsonData, $headers);
 
 
         return $result;
+    }
+
+    /**
+     * Execute many requests
+     *
+     * @param array $requests
+     *
+     * @throws ZaiusException
+     */
+    public function callAsync(array $requests)
+    {
+        $guzzleHttpClient = new GuzzleHttpClient();
+        $guzzleRequests = $guzzleHttpClient->convertRequests(
+            $requests,
+            $this->apiKey
+        );
+
+        $pool = new Pool(new Client, $guzzleRequests, [
+            'concurrency' => 10,
+            'fulfilled' => function ($response, $index) {
+                // this is delivered each successful response
+            },
+            'rejected' => function ($reason, $index) {
+                // this is delivered each failed request
+                $result = $reason->getMessage();
+                $httpCode = $reason->getCode();
+                throw new ZaiusException($result, $httpCode);
+            }
+        ]);
+
+        // Initiate the transfers and create a promise
+        $promise = $pool->promise();
+
+        // Force the pool of requests to complete.
+        $promise->wait();
     }
 
     /**
@@ -544,11 +687,7 @@ class ZaiusClient
 
             $method = strtoupper($method);
 
-            $headers = ['Content-Type' => 'application/json'];
-
-            if ($this->apiKey) {
-                $headers = array_merge(['x-api-key' => $this->apiKey], $headers);
-            }
+            $headers = ZaiusRequest::getDefaultHeaders($this->apiKey);
 
             if ($method == 'GET' && count($parameters)) {
                 $url.="?".http_build_query($parameters);
@@ -558,31 +697,60 @@ class ZaiusClient
             if (in_array($method, ['POST','PUT'])) {
                 $jsonData = json_encode($parameters);
                 $length = strlen($jsonData);
-                $headers = array_merge(['Content-Length' => $length]);
+                $headers = array_merge(['Content-Length' => $length], $headers);
             }
 
+            /* @var CurlHttpClient $curl */
             $curl = new CurlHttpClient();
-            /** @var CurlHttpClient $curl */
-            $curl->openConnection($url, $method, $jsonData, $headers, $this->timeout);
-            $result = $curl->sendRequest(true);
+            $curl->openConnection(
+                $url, $method, $jsonData, $headers, $this->timeout
+            );
+            $result = $curl->sendRequest();
             $httpCode = $curl->getHttpCode();
+            $curlReturnBody = $curl->extractResponseHeadersAndBody()[1];
+            $expectionMsg = "Failed to {$method} from Zaius.";
 
             if ($this->showException($result, $httpCode)) {
-                $customErrorMessage = false;
+
+                $showException = true;
+                $expection = [];
                 if ($httpCode >= 500) {
-                    $retryLater = $this->retryLater(["+10 seconds", "+30 seconds", "+1 minute", "+5 minutes"], $attempts, $this->apiKey, $parameters, $url, $method);
+                    $retryLater = $this->retryLater(
+                        ["+10 seconds", "+30 seconds", "+1 minute", "+5 minutes"],
+                        $attempts,
+                        $this->apiKey,
+                        $parameters,
+                        $url,
+                        $method
+                    );
                     if (!$retryLater) {
-                        $customErrorMessage = 'FAILURE posting to Zaius, repeated 5xx error codes. No further attempts will be made. Raw request:'.$curl;
+                        $expectionMsg = 'FAILURE posting to Zaius, repeated 5xx error codes. No further attempts will be made.';
+                    } else {
+                        $showException = false;
                     }
                 }
-                $error = $curl->getCurlError();
 
-                throw new ZaiusException($this->zaiusExceptionMessage($customErrorMessage, $method, $error, $httpCode, $result));
+                $error = $curl->getCurlError();
+                $expection['method'] = $method;
+                $expection['error'] = $error;
+                $expection['http_code'] = $httpCode;
+                $expection['body'] = $curlReturnBody;
+                $expection['raw_return'] = $result;
+
+                if ($showException) {
+                    $curl->closeConnection();
+                    throw new ZaiusException(
+                        $expectionMsg.
+                        ' Returned: '. $expection['body'].
+                        ' Raw return: '. $expection['raw_return'],
+                        $expection['error']
+                    );
+                }
             }
 
             $curl->closeConnection();
 
-            return $result;
+            return $curlReturnBody;
         }
     }
 
@@ -591,7 +759,7 @@ class ZaiusClient
      * Return the attempts number
      *
      * @param  $parameters
-     * @param  bool $returnAttempts
+     * @param  bool       $returnAttempts
      * @return int|mixed
      */
     private function removeAttempts($parameters, $returnAttempts = false)
@@ -609,17 +777,18 @@ class ZaiusClient
     /**
      * Set when retry the same Job
      *
-     * @param array      $time
-     * @param $apiKey
-     * @param $parameters
-     * @param $url
-     * @param $method
+     * @param  array      $time
+     * @param  int        $attempts
+     * @param  $apiKey
+     * @param  $parameters
+     * @param  $url
+     * @param  $method
+     * @return bool
      */
-    private function retryLater(array $time, int $attempts, $apiKey, $parameters, $url, $method)
+    private function retryLater(array $time, $attempts, $apiKey, $parameters, $url, $method)
     {
         $i=0;
         $run_at = null;
-        array_unshift($parameters, ['attempts'=>$attempts]);
 
         if ($attempts > count($time)) {
             return false;
@@ -634,28 +803,12 @@ class ZaiusClient
         }
 
         $attempts++;
-        $this->enqueue(new Job($this->apiKey, $parameters, $url, $method), $run_at);
+        array_unshift($parameters, ['attempts'=>$attempts]);
+        $this->enqueue(new Job($apiKey, $parameters, $url, $method), $run_at);
 
         return true;
     }
 
-    /**
-     * Return a custom or the default message
-     *
-     * @param  bool   $customErrorMessage
-     * @param  $method
-     * @param  $error
-     * @param  $info
-     * @param  $result
-     * @return bool|string
-     */
-    private function zaiusExceptionMessage($customErrorMessage = false, $method, $error, $httpCode, $result)
-    {
-        if (!$customErrorMessage) {
-            return "Failed to {$method} from Zaius. Error: {$error} . Http code {$httpCode}. Raw response {$result}";
-        }
-        return $customErrorMessage;
-    }
     /**
      * Enqueue a new Job
      *
@@ -672,22 +825,24 @@ class ZaiusClient
      * @param $params
      * @param $url
      * @return bool|string|null
-     * @throws ZaiusException
+     * @throws GuzzleException
      */
     protected function get($params, $url)
     {
-        $headers = ['Content-Type' => 'application/json'];
-
-        if ($this->apiKey) {
-            $headers = array_merge(['x-api-key' => $this->apiKey], $headers);
-        }
+        $headers = ZaiusRequest::getDefaultHeaders($this->apiKey);
 
         if (count($params)) {
             $url.="?".http_build_query($params);
         }
 
         $request = new GuzzleHttpClient();
-        $result = $request->send($url, 'GET', '', $headers, $this->timeout);
+        $result = $request->send(
+            $url,
+            'GET',
+            '',
+            $headers,
+            $this->timeout
+        );
 
         return $result;
     }
@@ -711,17 +866,13 @@ class ZaiusClient
             return !($httpCode >= 200 && $httpCode < 300);
         }
         switch ($httpCode) {
-        case ($httpCode < 200):
-            return 100;
-        case ($httpCode >= 200 && $httpCode < 300):
-            return 200;
-        case ($httpCode >= 300 && $httpCode < 400):
-            return 300;
-        case ($httpCode >= 400 && $httpCode < 500):
-            return 400;
-        case ($httpCode >= 500):
-            return 500;
-        }
+            case ($httpCode < 200): return 100;
+            case ($httpCode >= 200 && $httpCode < 300): return 200;
+            case ($httpCode >= 300 && $httpCode < 400): return 300;
+            case ($httpCode >= 400 && $httpCode < 500): return 400;
+            case ($httpCode >= 500): return 500;
+        } 
+        return true;
     }
 
     /**
@@ -737,5 +888,20 @@ class ZaiusClient
             return date($format);
         }
         return date($format, strtotime($time));
+    }
+
+    /**
+     * @param       $method
+     * @param       $endpoint
+     * @param array $params
+     * @param bool  $queue
+     *
+     * @return ZaiusRequest
+     * @throws ZaiusException
+     */
+    public function request($method, $endpoint, array $params = [], $queue = false)
+    {
+        $params = $this->prepareForPost($params);
+        return new ZaiusRequest($this, $method, $endpoint, $params, $queue);
     }
 }

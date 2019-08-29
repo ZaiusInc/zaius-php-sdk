@@ -4,6 +4,10 @@ namespace ZaiusSDK\Zaius;
 
 use ZaiusSDK\ZaiusClient;
 
+/**
+ * Class Job
+ * @package ZaiusSDK\Zaius
+ */
 class Job
 {
 
