@@ -2,9 +2,12 @@
 
 namespace ZaiusSDK\HttpClients;
 
+use GuzzleHttp\Pool;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Request;
+use ZaiusSDK\ZaiusClient;
+use ZaiusSDK\ZaiusException;
+use ZaiusSDK\ZaiusRequest;
 
 /**
  * Class GuzzleHttpClient
@@ -20,9 +23,44 @@ class GuzzleHttpClient
     /**
      * @param \GuzzleHttp\Client|null The Guzzle client.
      */
-    public function __construct(Client $guzzleClient = null)
-    {
+    public function __construct(
+        Client $guzzleClient = null
+    ) {
         $this->guzzleClient = $guzzleClient ?: new Client();
+    }
+
+//    public function sendAsync($requests){
+//        if(is_array($requests) && $requests[0] instanceof Request){
+//        }
+//    }
+
+    /**
+     * Convert ZaiusBatch requests into Guzzle requests
+     *
+     * @param array $requests
+     * @param       $apiKey
+     *
+     * @return array
+     * @throws ZaiusException
+     */
+    public function convertRequests(array $requests, $apiKey){
+
+        $requestViaGuzzle = [];
+        /** @var ZaiusRequest $r */
+        foreach ($requests as $request => $r){
+            $method = $r->getMethod();
+            $uri = $r->getUrl();
+            $headers = ZaiusRequest::getDefaultHeaders($apiKey) ;
+            $body = [];
+            foreach ($r->getPostParams() as $obj => $event){
+                array_push($body, $event[0]);
+            }
+            $requestViaGuzzle[] = new \GuzzleHttp\Psr7\Request(
+                $method, $uri, $headers, \GuzzleHttp\json_encode($body)
+            );
+        }
+
+        return $requestViaGuzzle;
     }
 
     /**
@@ -45,9 +83,9 @@ class GuzzleHttpClient
 
         try {
             $rawResponse = $this->guzzleClient->request($method, $url, $options);
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
+        } catch (\Exception $e) {
             $rawResponse = $e->getResponse();
-            new \ZaiusSDK\ZaiusException($e->getMessage());
+            new ZaiusException($e->getMessage());
         }
 
         return $rawResponse->getBody()->getContents();

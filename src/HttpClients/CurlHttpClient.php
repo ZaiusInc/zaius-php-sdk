@@ -47,10 +47,9 @@ class CurlHttpClient
     public function send($url, $method, $body, array $headers, $timeOut)
     {
         $this->openConnection($url, $method, $body, $headers, $timeOut);
-        $result = $this->sendRequest(true);
+        $result = $this->sendRequest();
 
         $httpCode = $this->curl->getinfo(CURLINFO_HTTP_CODE);
-        var_dump($result);exit;
         if ($this->showException($result, $httpCode)) {
             $error = $this->curl->error();
             throw new ZaiusException(
@@ -75,6 +74,7 @@ class CurlHttpClient
             $cmd .= " -H '".$header."'";
         }
         $cmd .= " -d '" . $body . "' " . "'" . $url . "'";
+        // Comment this line bellow to debug the return
         $cmd .= " > /dev/null 2>&1 &";
         exec($cmd, $output, $exit);
         return $exit == 0;
@@ -95,7 +95,7 @@ class CurlHttpClient
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_HTTPHEADER => $this->compileRequestHeaders($headers),
             CURLOPT_URL => $url,
-            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => $timeOut,
             CURLOPT_TIMEOUT => $timeOut,
             CURLOPT_RETURNTRANSFER => true, // Return response as string
             CURLOPT_HEADER => true, // Enable header processing
@@ -133,14 +133,13 @@ class CurlHttpClient
 
     /**
      * Send the request and get the raw response from curl
+     *
+     * @return bool|mixed|string
      */
-    public function sendRequest($return = false)
+    public function sendRequest()
     {
         $this->rawResponse = $this->curl->exec();
-
-        if ($return) {
-            return $this->rawResponse;
-        }
+        return $this->rawResponse;
     }
 
     /**
