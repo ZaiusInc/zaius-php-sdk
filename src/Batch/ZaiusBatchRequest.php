@@ -145,7 +145,6 @@ class ZaiusBatchRequest
      */
     public function requestEntityToBatchArray(ZaiusRequest $request, $options = null)
     {
-
         if (null === $options) {
             $options = [];
         } elseif (!is_array($options)) {

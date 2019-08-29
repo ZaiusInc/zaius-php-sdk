@@ -21,12 +21,12 @@ class ZaiusClient
     const MAX_BATCH_SIZE = 1000;
 
     /**
-     * @var string 
+     * @var string
      */
     protected $apiKey;
 
     /**
-     * @var int  
+     * @var int
      */
     protected $timeout;
 
@@ -401,7 +401,6 @@ class ZaiusClient
         $description='',
         $queue=false
     ) {
-
         $data = [
             'name' => $fieldName,
             'type' => $type,
@@ -589,7 +588,7 @@ class ZaiusClient
      */
     protected function process(ZaiusRequest $request)
     {
-        try{
+        try {
             $data = $request->getParams();
             $url = $request->getUrl();
             $method = $request->getMethod();
@@ -600,10 +599,9 @@ class ZaiusClient
                 );
             }
             return $this->post($data, $url, $method);
-        }catch (ZaiusException $exception){
+        } catch (ZaiusException $exception) {
             return $exception->getMessage();
         }
-
     }
 
     /**
@@ -703,7 +701,11 @@ class ZaiusClient
             /* @var CurlHttpClient $curl */
             $curl = new CurlHttpClient();
             $curl->openConnection(
-                $url, $method, $jsonData, $headers, $this->timeout
+                $url,
+                $method,
+                $jsonData,
+                $headers,
+                $this->timeout
             );
             $result = $curl->sendRequest();
             $httpCode = $curl->getHttpCode();
@@ -711,7 +713,6 @@ class ZaiusClient
             $expectionMsg = "Failed to {$method} from Zaius.";
 
             if ($this->showException($result, $httpCode)) {
-
                 $showException = true;
                 $expection = [];
                 if ($httpCode >= 500) {
@@ -871,7 +872,7 @@ class ZaiusClient
             case ($httpCode >= 300 && $httpCode < 400): return 300;
             case ($httpCode >= 400 && $httpCode < 500): return 400;
             case ($httpCode >= 500): return 500;
-        } 
+        }
         return true;
     }
 

@@ -10,7 +10,6 @@ use ZaiusSDK\ZaiusClient;
  */
 class Job
 {
-
     protected $apiKey;
 
     protected $data;
@@ -27,7 +26,7 @@ class Job
      * @param $url
      * @param $method
      */
-    public function __construct($apiKey,$data,$url,$method)
+    public function __construct($apiKey, $data, $url, $method)
     {
         $this->apiKey = $apiKey;
         $this->data = $data;
@@ -39,7 +38,7 @@ class Job
      * @return bool|string|null
      * @throws \ZaiusSDK\ZaiusException
      */
-    public function perform() 
+    public function perform()
     {
         $zaiusClient = new ZaiusClient($this->apiKey);
         return $zaiusClient->call($this->data, $this->method, $this->url, false);

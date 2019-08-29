@@ -43,20 +43,23 @@ class GuzzleHttpClient
      * @return array
      * @throws ZaiusException
      */
-    public function convertRequests(array $requests, $apiKey){
-
+    public function convertRequests(array $requests, $apiKey)
+    {
         $requestViaGuzzle = [];
         /** @var ZaiusRequest $r */
-        foreach ($requests as $request => $r){
+        foreach ($requests as $request => $r) {
             $method = $r->getMethod();
             $uri = $r->getUrl();
             $headers = ZaiusRequest::getDefaultHeaders($apiKey) ;
             $body = [];
-            foreach ($r->getPostParams() as $obj => $event){
+            foreach ($r->getPostParams() as $obj => $event) {
                 array_push($body, $event[0]);
             }
             $requestViaGuzzle[] = new \GuzzleHttp\Psr7\Request(
-                $method, $uri, $headers, \GuzzleHttp\json_encode($body)
+                $method,
+                $uri,
+                $headers,
+                \GuzzleHttp\json_encode($body)
             );
         }
 
