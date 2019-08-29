@@ -6,9 +6,10 @@ use ZaiusSDK\Test\TestAbstract;
 use ZaiusSDK\Zaius\ZaiusList;
 use ZaiusSDK\ZaiusException;
 
-class ListsTest extends TestAbstract {
-
-    public function testCreateSingleList() {
+class ListsTest extends TestAbstract
+{
+    public function testCreateSingleList()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
 
         $list = array();
@@ -17,32 +18,39 @@ class ListsTest extends TestAbstract {
         $zaiusClient->createList($list);
     }
 
-    public function testGetLists() {
+    public function testGetLists()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
         $lists = $zaiusClient->getLists();
 
-        $this->assertInternalType('array',$lists);
-        $this->assertGreaterThan(1,$lists);
+        $this->assertInternalType('array', $lists);
+        $this->assertGreaterThan(1, $lists);
     }
 
-    public function testChangeList() {
+    public function testChangeList()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
 
-        $zaiusClient->changeListName('madison_island_newsletter',uniqid().'-madison-changed');
+        $zaiusClient->changeListName('madison_island_newsletter', uniqid().'-madison-changed');
     }
 
-    public function testChangeInexistentList() {
+    public function testChangeInexistentList()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
 
         try {
-            $zaiusClient->changeListName(uniqid(),uniqid().'-changed');
+            $zaiusClient->call(
+                ['name' => uniqid().'-changed'],
+                'PUT',
+                self::API_URL_V3.'/lists/'.uniqid()
+            );
             $this->fail("Expected exception");
+        } catch (ZaiusException $ex) {
+            $this->assertInstanceOf(ZaiusException::class, $ex);
+            $this->assertContains(
+                'was not found for account',
+                $ex->getMessage()
+            );
         }
-        catch(\Exception $ex) {
-            $this->assertInstanceOf(ZaiusException::class,$ex);
-        }
-
     }
-
-
 }

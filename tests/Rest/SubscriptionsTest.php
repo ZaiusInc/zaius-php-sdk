@@ -12,7 +12,6 @@ use ZaiusSDK\Zaius\ZaiusList;
  */
 class SubscriptionsTest extends TestAbstract
 {
-
     public function testGetInexistentSubscription()
     {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
