@@ -35,8 +35,7 @@ class ClientTest extends TestAbstract
         try {
             $zaiusClient->call($event, 'POST', self::API_URL_V3.'/events');
             $this->fail("Expected exception");
-        }
-        catch(ZaiusException $ex) {
+        } catch (ZaiusException $ex) {
             $this->assertStringEndsWith(
                 '{"message":"Forbidden"}',
                 $ex->getMessage()
@@ -46,7 +45,6 @@ class ClientTest extends TestAbstract
 
     public function testManyEvents()
     {
-        
         $this->configureQueueProcessing($this->zaiusClient);
 
         $profile = [];

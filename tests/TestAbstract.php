@@ -11,19 +11,20 @@ use ZaiusSDK\ZaiusRequest;
 
 class TestAbstract extends TestCase
 {
-
     const API_URL_V3 = ZaiusClient::API_URL_V3;
 
-    protected function getZaiusClient($apiKey='',$timeout=30) 
+    protected function getZaiusClient($apiKey='', $timeout=30)
     {
         return new ZaiusClient($apiKey, $timeout);
     }
 
-    protected function getZaiusHttpClientCurl(){
+    protected function getZaiusHttpClientCurl()
+    {
         return new CurlHttpClient();
     }
 
-    protected function getGuzzleHttpClient(){
+    protected function getGuzzleHttpClient()
+    {
         return new GuzzleHttpClient();
     }
 
@@ -43,7 +44,7 @@ class TestAbstract extends TestCase
         return new ZaiusRequest($zaiusClient, $method, $endpoint, $params);
     }
 
-    protected function configureQueueProcessing(ZaiusClient $zaiusClient) 
+    protected function configureQueueProcessing(ZaiusClient $zaiusClient)
     {
         $zaiusClient->setQueueDatabaseCredentials(
             [

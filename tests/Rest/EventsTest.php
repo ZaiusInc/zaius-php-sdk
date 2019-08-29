@@ -49,7 +49,6 @@ class EventsTest extends TestAbstract
 
     public function testPostSingleEvent()
     {
-        
         $event = [];
         $event['type'] = 'test';
         $event['action'] = 'test';

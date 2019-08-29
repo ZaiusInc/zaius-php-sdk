@@ -4,10 +4,12 @@ namespace ZaiusSDK\Test\S3;
 
 use ZaiusSDK\Test\TestAbstract;
 
-class S3Test extends TestAbstract {
-    public function testUploadEvents() {
+class S3Test extends TestAbstract
+{
+    public function testUploadEvents()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
-        $s3Client = $zaiusClient->getS3Client(ZAIUS_TRACKER_ID,ZAIUS_S3_KEY_ID,ZAIUS_S3_SECRET);
+        $s3Client = $zaiusClient->getS3Client(ZAIUS_TRACKER_ID, ZAIUS_S3_KEY_ID, ZAIUS_S3_SECRET);
 
         $event1 = array();
         $event1['type'] = 'product';
@@ -25,13 +27,13 @@ class S3Test extends TestAbstract {
         $events = [$event1,$event2];
 
         $s3Client->uploadEvents($events);
-
     }
 
 
-    public function testUploadCustomers() {
+    public function testUploadCustomers()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
-        $s3Client = $zaiusClient->getS3Client(ZAIUS_TRACKER_ID,ZAIUS_S3_KEY_ID,ZAIUS_S3_SECRET);
+        $s3Client = $zaiusClient->getS3Client(ZAIUS_TRACKER_ID, ZAIUS_S3_KEY_ID, ZAIUS_S3_SECRET);
 
         $customer1 = array();
         $customer1['customer_id'] = 1100;
@@ -54,9 +56,10 @@ class S3Test extends TestAbstract {
         $s3Client->uploadCustomers($customers);
     }
 
-    public function testUploadProducts() {
+    public function testUploadProducts()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
-        $s3Client = $zaiusClient->getS3Client(ZAIUS_TRACKER_ID,ZAIUS_S3_KEY_ID,ZAIUS_S3_SECRET);
+        $s3Client = $zaiusClient->getS3Client(ZAIUS_TRACKER_ID, ZAIUS_S3_KEY_ID, ZAIUS_S3_SECRET);
 
         $product1 = array();
         $product1['product_id'] = 1;
@@ -79,9 +82,10 @@ class S3Test extends TestAbstract {
         $s3Client->uploadProducts($products);
     }
 
-    public function testUploadOrders() {
+    public function testUploadOrders()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
-        $s3Client = $zaiusClient->getS3Client(ZAIUS_TRACKER_ID,ZAIUS_S3_KEY_ID,ZAIUS_S3_SECRET);
+        $s3Client = $zaiusClient->getS3Client(ZAIUS_TRACKER_ID, ZAIUS_S3_KEY_ID, ZAIUS_S3_SECRET);
 
         $orderData = [];
         $order1 = array();

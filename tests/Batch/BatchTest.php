@@ -39,7 +39,8 @@ class BatchTest extends TestAbstract
                     'action' => 'add_to_cart',
                     'identifiers' => ['email' => 'tyler@zaius.com'],
                     'data' => ['product_id' => '123']
-                ])
+                ]
+            )
         );
 
         $batchRequest->add(
@@ -89,5 +90,4 @@ class BatchTest extends TestAbstract
         $worker = new Worker();
         $worker->processAll();
     }
-
 }

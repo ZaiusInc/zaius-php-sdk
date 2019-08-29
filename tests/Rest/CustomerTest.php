@@ -21,7 +21,6 @@ class CustomerTest extends TestAbstract
 
     public function testPostSingleCustomer()
     {
-        
         $profile = [];
         $profile['email'] = 'test3@example.com';
         $ret = $this->zaiusClient->postCustomer($profile);
@@ -31,7 +30,6 @@ class CustomerTest extends TestAbstract
 
     public function testPostBatchCustomers()
     {
-        
         $profile1 = [];
         $profile1['email']='test4@example.com';
         $profile2 = [];

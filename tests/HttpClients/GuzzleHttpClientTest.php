@@ -35,7 +35,7 @@ class GuzzleHttpClientTest extends TestAbstract
         $requests = function ($total) use ($client, $privateKey) {
             $uri = self::API_URL_V3.'/events';
             for ($i = 0; $i < $total; $i++) {
-                yield function() use ($i, $privateKey, $client, $uri) {
+                yield function () use ($i, $privateKey, $client, $uri) {
                     return $client->postAsync(
                         $uri,
                         [
@@ -85,8 +85,7 @@ class GuzzleHttpClientTest extends TestAbstract
         $requests = [];
 
         for ($i = 0; $i < $total; $i++) {
-
-                $requests[$i] = $client->postAsync(
+            $requests[$i] = $client->postAsync(
                     $uri,
                     [
                         'headers' => ZaiusRequest::getDefaultHeaders($privateKey),
@@ -116,5 +115,4 @@ class GuzzleHttpClientTest extends TestAbstract
         $this->assertNotFalse($results);
         $this->assertEquals('fulfilled', $requests[0]->getState());
     }
-
 }
