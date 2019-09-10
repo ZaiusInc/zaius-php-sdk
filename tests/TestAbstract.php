@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use ZaiusSDK\Batch\ZaiusBatchRequest;
 use ZaiusSDK\HttpClients\CurlHttpClient;
 use ZaiusSDK\HttpClients\GuzzleHttpClient;
+use ZaiusSDK\Log\DJJob;
 use ZaiusSDK\ZaiusClient;
 use ZaiusSDK\ZaiusRequest;
 
@@ -16,6 +17,11 @@ class TestAbstract extends TestCase
     protected function getZaiusClient($apiKey='', $timeout=30)
     {
         return new ZaiusClient($apiKey, $timeout);
+    }
+
+    protected function getZaiusLog(ZaiusClient $zaiusClient)
+    {
+        return new DJJob($zaiusClient);
     }
 
     protected function getZaiusHttpClientCurl()
@@ -46,6 +52,7 @@ class TestAbstract extends TestCase
 
     protected function configureQueueProcessing(ZaiusClient $zaiusClient)
     {
+        $zaiusClient->setJobTable(DB_TABLE);
         $zaiusClient->setQueueDatabaseCredentials(
             [
             'driver' => DB_DRIVER,
