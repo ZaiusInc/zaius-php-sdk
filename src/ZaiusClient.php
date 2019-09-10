@@ -2,6 +2,7 @@
 
 namespace ZaiusSDK;
 
+use DJJob;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Pool;
@@ -24,6 +25,8 @@ class ZaiusClient
      * @var string
      */
     protected $apiKey;
+
+    protected $jobTable;
 
     /**
      * @var int
@@ -71,8 +74,9 @@ class ZaiusClient
 
     /**
      * @param $filters
+     *
      * @return array|null
-     * @throws ZaiusException
+     * @throws GuzzleException
      */
     public function getCustomer($filters)
     {
@@ -127,7 +131,7 @@ class ZaiusClient
 
     /**
      * @return array
-     * @throws ZaiusException
+     * @throws GuzzleException
      */
     public function getLists()
     {
@@ -137,8 +141,9 @@ class ZaiusClient
 
     /**
      * @param $filters
+     *
      * @return bool|mixed|string|null
-     * @throws ZaiusException
+     * @throws GuzzleException
      */
     public function getSubscriptions($filters)
     {
@@ -248,8 +253,9 @@ class ZaiusClient
 
     /**
      * @param string $exportId
+     *
      * @return bool|string|null
-     * @throws ZaiusException
+     * @throws GuzzleException
      */
     public function getExportStatus($exportId)
     {
@@ -302,7 +308,7 @@ class ZaiusClient
 
     /**
      * @return array
-     * @throws ZaiusException
+     * @throws GuzzleException
      */
     public function getObjects()
     {
@@ -312,8 +318,9 @@ class ZaiusClient
 
     /**
      * @param string $objectName
+     *
      * @return array|mixed|null
-     * @throws ZaiusException
+     * @throws GuzzleException
      */
     public function getObject($objectName)
     {
@@ -359,8 +366,9 @@ class ZaiusClient
 
     /**
      * @param string $objectName
+     *
      * @return mixed
-     * @throws ZaiusException
+     * @throws GuzzleException
      */
     public function getObjectFields($objectName)
     {
@@ -371,8 +379,9 @@ class ZaiusClient
     /**
      * @param string $objectName
      * @param string $fieldName
+     *
      * @return mixed
-     * @throws ZaiusException
+     * @throws GuzzleException
      */
     public function getObjectField($objectName, $fieldName)
     {
@@ -385,13 +394,15 @@ class ZaiusClient
     }
 
     /**
-     * @param $objectName
-     * @param $fieldName
-     * @param $type
-     * @param $displayName
-     * @param string      $description
-     * @param bool        $queue
+     * @param        $objectName
+     * @param        $fieldName
+     * @param        $type
+     * @param        $displayName
+     * @param string $description
+     * @param bool   $queue
+     *
      * @return mixed
+     * @throws ZaiusException
      */
     public function createObjectField(
         $objectName,
@@ -420,8 +431,9 @@ class ZaiusClient
 
     /**
      * @param string $objectName
+     *
      * @return null|array
-     * @throws ZaiusException
+     * @throws GuzzleException
      */
     public function getRelations($objectName)
     {
@@ -432,8 +444,9 @@ class ZaiusClient
     /**
      * @param string $objectName
      * @param string $relationName
+     *
      * @return array|null
-     * @throws ZaiusException
+     * @throws GuzzleException
      */
     public function getRelation($objectName, $relationName)
     {
@@ -571,14 +584,15 @@ class ZaiusClient
 
     /**
      * @param $credentials
-     * @param string      $jobTable
+     * @param string $jobTable
      */
     public function setQueueDatabaseCredentials($credentials, $jobTable='')
     {
         if ($jobTable) {
-            \DJJob::configure($credentials, $jobTable);
+            $this->setJobTable($jobTable);
+            DJJob::configure($credentials, $jobTable);
         } else {
-            \DJJob::configure($credentials);
+            DJJob::configure($credentials);
         }
     }
 
@@ -819,7 +833,7 @@ class ZaiusClient
      */
     private function enqueue($handler, $run_at = null)
     {
-        return \DJJob::enqueue($handler, $queue = "default", $run_at);
+        return DJJob::enqueue($handler, $queue = "default", $run_at);
     }
 
     /**
@@ -904,5 +918,21 @@ class ZaiusClient
     {
         $params = $this->prepareForPost($params);
         return new ZaiusRequest($this, $method, $endpoint, $params, $queue);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getJobTable()
+    {
+        return $this->jobTable;
+    }
+
+    /**
+     * @param mixed $jobTable
+     */
+    public function setJobTable($jobTable)
+    {
+        $this->jobTable = $jobTable;
     }
 }
