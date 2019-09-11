@@ -28,13 +28,20 @@ class DJJobTest extends TestAbstract
         $this->configureQueueProcessing($this->zaiusClient);
     }
 
-    public function testCountAllErrors(){
+    public function testGetErrorSummaryJson(){
 
         $this->createErrorsAndQueue(1,1);
         $return = $this->zaiusLog->countAllErrors();
 
         $this->assertNotNull($return);
         $this->assertGreaterThan(0, $return);
+    }
+
+    public function testCountAllErrors(){
+        $return = $this->zaiusLog->getErrorSummaryJson();
+
+        $this->assertNotNull($return);
+        $this->assertJson($return);
     }
 
     public function testCountErrors24h(){

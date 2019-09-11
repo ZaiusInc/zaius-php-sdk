@@ -24,14 +24,19 @@ class DJJob{
     }
 
     /**
-     * @param $sqlQuery
+     * Complete JSON error summary
      *
-     * @return array
+     * @return false|string
      * @throws DJException
      */
-    private function runDDJobQuery($sqlQuery)
-    {
-        return \DJJob::runQuery($sqlQuery);
+    public function getErrorSummaryJson(){
+        $json = [
+            'errorCount' => $this->countAllErrors(),
+            'errors24h' => $this->countErrors24h(),
+            'errors1h' => $this->countErrors1h(),
+            'mostRecentErrorTs' => $this->getMostRecentErrorTs(),
+            ];
+        return json_encode($json);
     }
 
     /**
@@ -90,5 +95,16 @@ class DJJob{
             $this->zaiusClient->getJobTable());
         $result = $this->runDDJobQuery($sql);
         return $result;
+    }
+
+    /**
+     * @param $sqlQuery
+     *
+     * @return array
+     * @throws DJException
+     */
+    private function runDDJobQuery($sqlQuery)
+    {
+        return \DJJob::runQuery($sqlQuery);
     }
 }
