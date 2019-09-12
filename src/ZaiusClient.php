@@ -6,7 +6,6 @@ use DJJob;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Pool;
-use GuzzleHttp\Psr7\Response;
 use ZaiusSDK\HttpClients\GuzzleHttpClient;
 use ZaiusSDK\Zaius\Job;
 use ZaiusSDK\Zaius\S3\S3Client;
@@ -19,6 +18,9 @@ use ZaiusSDK\HttpClients\CurlHttpClient;
  */
 class ZaiusClient
 {
+    /**
+     * Maximum batch size allowed
+     */
     const MAX_BATCH_SIZE = 1000;
 
     /**
@@ -26,6 +28,9 @@ class ZaiusClient
      */
     protected $apiKey;
 
+    /**
+     * @var
+     */
     protected $jobTable;
 
     /**
@@ -33,6 +38,9 @@ class ZaiusClient
      */
     protected $timeout;
 
+    /**
+     * Zaius API URL
+     */
     const API_URL_V3 = 'http://api.zaius.com/v3';
 
     /**
@@ -49,6 +57,8 @@ class ZaiusClient
     }
 
     /**
+     * Post customer
+     *
      * @param $customers
      * @param bool      $queue
      * @return mixed
@@ -73,6 +83,8 @@ class ZaiusClient
     }
 
     /**
+     * Get customer
+     *
      * @param $filters
      *
      * @return array|null
@@ -90,6 +102,8 @@ class ZaiusClient
     }
 
     /**
+     * Post Event
+     *
      * @param $events
      * @param bool   $queue
      * @return mixed
@@ -108,6 +122,8 @@ class ZaiusClient
     }
 
     /**
+     * Create a list
+     *
      * @param $list
      * @param bool $queue
      * @return mixed
@@ -130,6 +146,8 @@ class ZaiusClient
     }
 
     /**
+     * Get lists
+     *
      * @return array
      * @throws GuzzleException
      */
@@ -140,6 +158,8 @@ class ZaiusClient
     }
 
     /**
+     * Get subscriptions
+     *
      * @param $filters
      *
      * @return bool|mixed|string|null
@@ -157,6 +177,8 @@ class ZaiusClient
     }
 
     /**
+     * Update Channel OptIn
+     *
      * @param $optedIn
      * @param $email
      * @param bool    $queue
@@ -177,6 +199,8 @@ class ZaiusClient
     }
 
     /**
+     * Update Subscription
+     *
      * @param $subscriptions
      * @param bool          $queue
      * @return mixed
@@ -195,6 +219,8 @@ class ZaiusClient
     }
 
     /**
+     * Export Objects
+     *
      * @param array  $objects
      * @param string $format
      * @param string $delimiter
@@ -222,6 +248,8 @@ class ZaiusClient
     }
 
     /**
+     * Export objects with filters
+     *
      * @param array  $select
      * @param string $format
      * @param string $delimiter
@@ -252,6 +280,8 @@ class ZaiusClient
     }
 
     /**
+     * Get export status
+     *
      * @param string $exportId
      *
      * @return bool|string|null
@@ -263,6 +293,8 @@ class ZaiusClient
     }
 
     /**
+     * OptOut
+     *
      * @param $requesterEmail
      * @param string         $email
      * @param string         $phone
@@ -307,6 +339,8 @@ class ZaiusClient
     }
 
     /**
+     * Get objects
+     *
      * @return array
      * @throws GuzzleException
      */
@@ -317,6 +351,8 @@ class ZaiusClient
     }
 
     /**
+     * Get object
+     *
      * @param string $objectName
      *
      * @return array|mixed|null
@@ -329,6 +365,8 @@ class ZaiusClient
     }
 
     /**
+     * Create objects Schema
+     *
      * @param $name
      * @param $displayName
      * @param string      $alias
@@ -365,6 +403,8 @@ class ZaiusClient
     }
 
     /**
+     * Get object fields
+     *
      * @param string $objectName
      *
      * @return mixed
@@ -377,6 +417,8 @@ class ZaiusClient
     }
 
     /**
+     * Get object field
+     *
      * @param string $objectName
      * @param string $fieldName
      *
@@ -394,6 +436,8 @@ class ZaiusClient
     }
 
     /**
+     * Create object field
+     *
      * @param        $objectName
      * @param        $fieldName
      * @param        $type
@@ -430,6 +474,8 @@ class ZaiusClient
     }
 
     /**
+     * Get relations
+     *
      * @param string $objectName
      *
      * @return null|array
@@ -442,6 +488,8 @@ class ZaiusClient
     }
 
     /**
+     * Get relation
+     *
      * @param string $objectName
      * @param string $relationName
      *
@@ -455,6 +503,8 @@ class ZaiusClient
     }
 
     /**
+     * Post object
+     *
      * @param $objectName
      * @param $data
      * @param bool       $queue
@@ -868,8 +918,10 @@ class ZaiusClient
      *
      * ToDo: Abstract to a new class
      *
-     * @param  $result
-     * @param  $info
+     * @param      $result
+     * @param      $httpCode
+     * @param bool $returnType
+     *
      * @return bool
      */
     private function showException($result, $httpCode, $returnType = false)
