@@ -2,11 +2,17 @@
 
 namespace ZaiusSDK\Test\Log;
 
+use ZaiusSDK\Log\DJJob;
 use ZaiusSDK\Test\TestAbstract;
 use ZaiusSDK\Zaius\Worker;
 use ZaiusSDK\ZaiusClient;
 use ZaiusSDK\ZaiusException;
 
+/**
+ * Class DJJobTest
+ *
+ * @package ZaiusSDK\Test\Log
+ */
 class DJJobTest extends TestAbstract
 {
 
@@ -16,11 +22,14 @@ class DJJobTest extends TestAbstract
     private $zaiusClient;
 
     /**
-     * @var Errors
+     * @var DJJob
      */
     private $zaiusLog;
 
 
+    /**
+     * @inheritDoc
+     */
     public function setUp()
     {
         $this->zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
@@ -28,43 +37,59 @@ class DJJobTest extends TestAbstract
         $this->configureQueueProcessing($this->zaiusClient);
     }
 
-    public function testGetErrorSummaryJson(){
-
-        $this->createErrorsAndQueue(1,1);
+    /**
+     * Testing getting errors summary json
+     */
+    public function testGetErrorsSummaryJson()
+    {
+        $this->createErrorsAndQueue(1, 1);
         $return = $this->zaiusLog->countAllErrors();
 
         $this->assertNotNull($return);
         $this->assertGreaterThan(0, $return);
     }
 
-    public function testCountAllErrors(){
-        $return = $this->zaiusLog->getErrorSummaryJson();
+    /**
+     * Testing counting all errors
+     */
+    public function testCountAllErrors()
+    {
+        $return = $this->zaiusLog->getErrorsSummaryJson();
 
         $this->assertNotNull($return);
         $this->assertJson($return);
     }
 
-    public function testCountErrors24h(){
-
-        $this->createErrorsAndQueue(1,0);
+    /**
+     * Testing counting errors from the last 24h
+     */
+    public function testCountErrors24h()
+    {
+        $this->createErrorsAndQueue(1, 0);
         $return = $this->zaiusLog->countErrors24h();
 
         $this->assertNotNull($return);
         $this->assertGreaterThan(0, $return);
     }
 
-    public function testCountErrors1h(){
-
-        $this->createErrorsAndQueue(1,0);
+    /**
+     * Testing counting errors from the last 1h
+     */
+    public function testCountErrors1h()
+    {
+        $this->createErrorsAndQueue(1, 0);
         $return = $this->zaiusLog->countErrors1h();
 
         $this->assertNotNull($return);
         $this->assertGreaterThan(0, $return);
     }
 
-    public function testGetMostRecentErrorTs(){
-
-        $this->createErrorsAndQueue(1,1);
+    /**
+     * Testing getting the most recent error TS
+     */
+    public function testGetMostRecentErrorTs()
+    {
+        $this->createErrorsAndQueue(1, 1);
         $return = $this->zaiusLog->getMostRecentErrorTs();
 
         $this->assertNotNull($return);
@@ -72,10 +97,18 @@ class DJJobTest extends TestAbstract
         $this->assertGreaterThan(0, $return);
     }
 
+    /**
+     * Creating errors and jobs queue
+     *
+     * @param $numberOfErrors
+     * @param $numberOfJobs
+     *
+     * @throws ZaiusException
+     */
     protected function createErrorsAndQueue($numberOfErrors, $numberOfJobs)
     {
         $errors = 1;
-        while ($errors <= $numberOfErrors){
+        while ($errors <= $numberOfErrors) {
             $events = [
                 ['type' => 'error']
             ];
@@ -87,7 +120,7 @@ class DJJobTest extends TestAbstract
         $worker->processAll();
 
         $jobs = 1;
-        while ($jobs <= $numberOfJobs){
+        while ($jobs <= $numberOfJobs) {
             $events = [
                 [
                     'type' => 'product', 'action' => 'add_to_cart',

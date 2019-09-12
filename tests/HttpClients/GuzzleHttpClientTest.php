@@ -86,8 +86,8 @@ class GuzzleHttpClientTest extends TestAbstract
 
         for ($i = 0; $i < $total; $i++) {
             $requests[$i] = $client->postAsync(
-                    $uri,
-                    [
+                $uri,
+                [
                         'headers' => ZaiusRequest::getDefaultHeaders($privateKey),
                         'json'    => [
                             [
@@ -106,7 +106,7 @@ class GuzzleHttpClientTest extends TestAbstract
                             ]
                         ]
                     ]
-                );
+            );
         };
 
         // Wait for the requests to complete, even if some of them fail
