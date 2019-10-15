@@ -5,31 +5,41 @@ namespace ZaiusSDK\Test\Rest;
 use ZaiusSDK\Test\TestAbstract;
 use ZaiusSDK\ZaiusException;
 
-class ObjectsTest extends TestAbstract {
-    public function testGetObjects() {
+class ObjectsTest extends TestAbstract
+{
+    public function testGetObjects()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
 
         $objects = $zaiusClient->getObjects();
 
-        $this->assertInternalType('array',$objects);
-        $this->assertGreaterThan(1,count($objects));
+        $this->assertInternalType('array', $objects);
+        $this->assertGreaterThan(1, count($objects));
     }
 
-    public function testGetInexistentObject() {
+    public function testGetInexistentObject()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
 
         $object = $zaiusClient->getObject('foo');
-        $this->assertNull($object);
+        $this->assertArrayHasKey('detail', $object);
+        $this->assertArrayHasKey('message', $object['detail']);
+        $this->assertContains(
+            'Unable to locate object',
+            $object['detail']['message']
+        );
     }
 
-    public function testGetObject() {
+    public function testGetObject()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
 
         $object = $zaiusClient->getObject('products');
-        $this->assertInternalType('array',$object);
+        $this->assertInternalType('array', $object);
     }
 
-    public function testCreateObjectSchema() {
+    public function testCreateObjectSchema()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
 
         $fields =  [
@@ -56,76 +66,82 @@ class ObjectsTest extends TestAbstract {
 
         try {
             $zaiusClient->createObjectSchema('test_objects', 'Test Object', 'test_object', $fields, $relations);
-        }
-        catch (ZaiusException $exception) {
-            if(!strpos($exception->getMessage(),'already used by another object')) {
+        } catch (ZaiusException $exception) {
+            if (!strpos($exception->getMessage(), 'already used by another object')) {
                 throw $exception;
             }
         }
     }
 
-    public function testCreateOrUpdateObject() {
+    public function testCreateOrUpdateObject()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
 
-        $zaiusClient->postObject('products',['product_id'=>33,'name'=>'test product']);
+        $zaiusClient->postObject('products', ['product_id'=>33,'name'=>'test product']);
 
-        $zaiusClient->postObject('products',['product_id'=>33,'name'=>'test modified']);
+        $zaiusClient->postObject('products', ['product_id'=>33,'name'=>'test modified']);
     }
 
-    public function testListObjectFields() {
+    public function testListObjectFields()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
 
         $fields = $zaiusClient->getObjectFields('products');
 
-        $this->assertInternalType('array',$fields);
-        $this->assertGreaterThan(1,count($fields));
+        $this->assertInternalType('array', $fields);
+        $this->assertGreaterThan(1, count($fields));
     }
 
-    public function testObjectField() {
+    public function testObjectField()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
-        $field = $zaiusClient->getObjectField('products','product_id');
+        $field = $zaiusClient->getObjectField('products', 'product_id');
 
-        $this->assertInternalType('array',$field);
-        $this->assertGreaterThan(1,count($field));
+        $this->assertInternalType('array', $field);
+        $this->assertGreaterThan(1, count($field));
     }
 
-    public function testInexistentObjectField() {
+    public function testInexistentObjectField()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
-        $field = $zaiusClient->getObjectField('products','foo');
+        $field = $zaiusClient->getObjectField('products', 'foo');
 
-        $this->assertNull($field);
+        $this->assertArrayHasKey('detail', $field);
+        $this->assertArrayHasKey('message', $field['detail']);
+        $this->assertContains(
+            'Unable to locate field',
+            $field['detail']['message']
+        );
     }
 
-    public function testCreateField() {
+    public function testCreateField()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
         try {
-            $zaiusClient->createObjectField('products','test_field','string','Test field','Test description');
-        }
-        catch(ZaiusException $exception) {
-            if(!strpos($exception->getMessage(),'already used by another field')) {
+            $zaiusClient->createObjectField('products', 'test_field', 'string', 'Test field', 'Test description');
+        } catch (ZaiusException $exception) {
+            if (!strpos($exception->getMessage(), 'already used by another field')) {
                 throw $exception;
             }
         }
-
     }
 
-    public function testGetRelations() {
+    public function testGetRelations()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
         $relations = $zaiusClient->getRelations('products');
 
 
-        $this->assertInternalType('array',$relations);
-        $this->assertGreaterThan(1,count($relations));
+        $this->assertInternalType('array', $relations);
+        $this->assertGreaterThan(1, count($relations));
     }
 
-    public function testGetRelation() {
+    public function testGetRelation()
+    {
         $zaiusClient = $this->getZaiusClient(ZAIUS_PRIVATE_API_KEY);
-        $relation = $zaiusClient->getRelation('products','category');
+        $relation = $zaiusClient->getRelation('products', 'category');
 
-        $this->assertInternalType('array',$relation);
-        $this->assertArrayHasKey('name',$relation);
+        $this->assertInternalType('array', $relation);
+        $this->assertArrayHasKey('name', $relation);
     }
-
-
-    
 }

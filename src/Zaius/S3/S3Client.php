@@ -29,7 +29,7 @@ class S3Client
      * @param string $keyId
      * @param string $secretAccessKey
      */
-    public function __construct($trackerId,$keyId,$secretAccessKey)
+    public function __construct($trackerId, $keyId, $secretAccessKey)
     {
         $this->trackerId = $trackerId;
         $this->keyId = $keyId;
@@ -41,8 +41,9 @@ class S3Client
      * @param bool $storeInTmp
      * @throws ZaiusException
      */
-    public function uploadEvents($events,$storeInTmp = false, $prefix = null) {
-        $this->uploadDataToS3($events,'events',$storeInTmp, $prefix);
+    public function uploadEvents($events, $storeInTmp = false, $prefix = null)
+    {
+        $this->uploadDataToS3($events, 'events', $storeInTmp, $prefix);
     }
 
     /**
@@ -50,8 +51,9 @@ class S3Client
      * @param bool $storeInTmp
      * @throws ZaiusException
      */
-    public function uploadCustomers($customers,$storeInTmp = false, $prefix = null) {
-        $this->uploadDataToS3($customers,'customers',$storeInTmp, $prefix);
+    public function uploadCustomers($customers, $storeInTmp = false, $prefix = null)
+    {
+        $this->uploadDataToS3($customers, 'customers', $storeInTmp, $prefix);
     }
 
     /**
@@ -59,8 +61,9 @@ class S3Client
      * @param bool $storeInTmp
      * @throws ZaiusException
      */
-    public function uploadProducts($products,$storeInTmp = false, $prefix = null) {
-        $this->uploadDataToS3($products,'products',$storeInTmp, $prefix);
+    public function uploadProducts($products, $storeInTmp = false, $prefix = null)
+    {
+        $this->uploadDataToS3($products, 'products', $storeInTmp, $prefix);
     }
 
     /**
@@ -68,8 +71,9 @@ class S3Client
      * @param bool $storeInTmp
      * @throws ZaiusException
      */
-    public function uploadOrders($orders,$storeInTmp = false, $prefix = null) {
-        $this->uploadDataToS3($orders,'orders',$storeInTmp, $prefix);
+    public function uploadOrders($orders, $storeInTmp = false, $prefix = null)
+    {
+        $this->uploadDataToS3($orders, 'orders', $storeInTmp, $prefix);
     }
 
     /**
@@ -77,8 +81,9 @@ class S3Client
      * @param string $type
      * @throws ZaiusException
      */
-    protected function validate($data,$type) {
-        foreach($data as $datum) {
+    protected function validate($data, $type)
+    {
+        foreach ($data as $datum) {
             switch ($type) {
                 case 'events':
                     $requiredFields = ['type'=>'','action' => '','identifiers' => 'array','data' => 'array'];
@@ -97,12 +102,13 @@ class S3Client
             }
         }
 
-        foreach($data as $datum) {
-            foreach($requiredFields as $key=>$value) {
-                if(!isset($datum[$key])) {
+        foreach ($data as $datum) {
+            foreach ($requiredFields as $key=>$value) {
+                if (!isset($datum[$key])) {
                     throw new ZaiusException("Key $key must be defined");
                 }
-                if($value == 'array' && !is_array($datum[$key])) {;
+                if ($value == 'array' && !is_array($datum[$key])) {
+                    ;
                     throw new ZaiusException("Key $key must contain an array");
                 }
             }
@@ -119,12 +125,12 @@ class S3Client
      * @return \Aws\Result
      * @throws ZaiusException
      */
-    protected function uploadDataToS3($data,$type,$storeInTmp = false, $prefix = null) {
-
-        $this->validate($data,$type);
+    protected function uploadDataToS3($data, $type, $storeInTmp = false, $prefix = null)
+    {
+        $this->validate($data, $type);
 
         $s3Translator = new S3Translator();
-        switch($type) {
+        switch ($type) {
             case 'events':
                 $translatedData = $s3Translator->translateEvents($data);
                 $s3Type = 'event';
@@ -160,15 +166,14 @@ class S3Client
         ]);
 
         $jsonBody = '';
-        foreach($translatedData as $datum) {
+        foreach ($translatedData as $datum) {
             $tmp = ['type'=>$s3Type,'data'=>$datum];
             $jsonBody.=json_encode($tmp)."\n";
         }
 
-        if($storeInTmp) {
+        if ($storeInTmp) {
             $bucket = self::ZAIUS_INCOMING_TMP;
-        }
-        else {
+        } else {
             $bucket = self::ZAIUS_INCOMING;
         }
 
@@ -179,7 +184,4 @@ class S3Client
         ]);
         return $ret;
     }
-
-
-
 }

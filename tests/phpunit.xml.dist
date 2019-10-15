@@ -24,5 +24,6 @@
         <const name="DB_NAME" value="ADD_YOUR_VALUE_HERE"/>
         <const name="DB_USER" value="ADD_YOUR_VALUE_HERE"/>
         <const name="DB_PASSWORD" value="ADD_YOUR_VALUE_HERE"/>
+        <const name="DB_TABLE" value="ADD_YOUR_VALUE_HERE"/>
     </php>
 </phpunit>
