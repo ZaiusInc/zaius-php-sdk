@@ -2,7 +2,6 @@
 
 namespace ZaiusSDK;
 
-class ZaiusException extends \Exception {
-
+class ZaiusException extends \Exception
+{
 }
-
