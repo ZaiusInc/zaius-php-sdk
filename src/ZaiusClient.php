@@ -49,7 +49,7 @@ class ZaiusClient
         $customers = $this->prepareForPost($customers);
         $realCustomers = array();
         foreach($customers as $customer) {
-            $realCustomers['attributes'] = $customer;
+            $realCustomers[]['attributes'] = $customer;
         }
         return $this->process($realCustomers,self::API_URL_V3.'/profiles','POST',$queue);
     }
