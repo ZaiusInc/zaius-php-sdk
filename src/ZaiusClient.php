@@ -68,8 +68,9 @@ class ZaiusClient
     {
         $realCustomers = [];
         $customers = $this->prepareForPost($customers);
-        foreach ($customers as $customer) {
-            $realCustomers['attributes'] = $customer;
+        $realCustomers = array();
+        foreach($customers as $customer) {
+            $realCustomers[]['attributes'] = $customer;
         }
 
         $request = $this->request(
