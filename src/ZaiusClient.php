@@ -405,18 +405,27 @@ class ZaiusClient
     }
 
     public function setQueueDatabaseCredentials($credentials,$jobTable='') {
-        if($jobTable) {
+        // ZAI-224 Disabled queuing system
+        throw new \Exception("Queuing system disabled");
+        return; 
+        // END ZAI-224
+        
+	/* if($jobTable) {
             \DJJob::configure($credentials,$jobTable);
         }
         else {
             \DJJob::configure($credentials);
-        }
+        } */ 
 
     }
 
     protected function process($data,$url,$method,$queue) {
         if($queue) {
-            return \DJJob::enqueue(new Job($this->apiKey,$data,$url,$method));
+            // ZAI-224 Disabled queuing system
+            throw new \Exception("Queuing system disabled");
+            return; 
+            // END ZAI-224
+            // return \DJJob::enqueue(new Job($this->apiKey,$data,$url,$method));
         }
         else {
             return $this->post($data,$url,$method);
@@ -470,7 +479,11 @@ class ZaiusClient
 
     public function call($parameters, $method, $url, $queue = false) {
         if($queue) {
-            return \DJJob::enqueue(new Job($this->apiKey,$parameters,$url,$method));
+            // ZAI-224 Disabled queuing system
+            throw new \Exception("Queuing system disabled");
+            return; 
+            // END ZAI-224
+            // return \DJJob::enqueue(new Job($this->apiKey,$parameters,$url,$method));
         }
         else {
             $method = strtoupper($method);
