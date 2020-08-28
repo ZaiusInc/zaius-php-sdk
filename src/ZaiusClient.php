@@ -572,11 +572,12 @@ class ZaiusClient
 
         $result = curl_exec($curl);
         $info = curl_getinfo($curl);
-        curl_close($curl);
         if ($result === false || ($info['http_code'] != 200 && $info['http_code'] != 202 && $info['http_code']!=404)) {
             $error = curl_error($curl);
+            curl_close($curl);
             throw new ZaiusException("Failed to GET from Zaius. Error: $error . Http code {$info['http_code']}. Raw response $result");
         }
+        curl_close($curl);
         if($info['http_code'] == 404) {
             return null;
         }
