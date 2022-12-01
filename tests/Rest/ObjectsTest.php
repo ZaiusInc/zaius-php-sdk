@@ -55,7 +55,7 @@ class ObjectsTest extends TestAbstract {
         ];
 
         try {
-            $zaiusClient->createObjectSchema('test_objects', 'Test Object', 'test_object', $fields, $relations);
+            $zaiusClient->createObjectSchema('test_objects', 'Test Object', $fields, $relations, 'test_object');
         }
         catch (ZaiusException $exception) {
             if(!strpos($exception->getMessage(),'already used by another object')) {

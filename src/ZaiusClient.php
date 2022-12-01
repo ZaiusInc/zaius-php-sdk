@@ -240,7 +240,7 @@ class ZaiusClient
      * @return mixed
      * @throws ZaiusException
      */
-    public function createObjectSchema($name,$displayName,$alias='',$fields,$relations,$queue=false) {
+    public function createObjectSchema($name,$displayName,$fields,$relations,$alias='',$queue=false) {
         $this->apiKey = $this->privateKey;
         $data = [];
         $data['name'] = $name;
