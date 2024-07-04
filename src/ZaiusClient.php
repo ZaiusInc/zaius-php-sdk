@@ -24,7 +24,7 @@ class ZaiusClient
     /** @var int  */
     protected $timeout;
 
-    const API_URL_V3 = 'http://api.zaius.com/v3';
+    const API_URL_V3 = 'https://api.zaius.com/v3';
 
     /**
      * ZaiusClient constructor.
