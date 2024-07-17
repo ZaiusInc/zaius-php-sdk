@@ -3,7 +3,7 @@
   "description": "The Zaius SDK for PHP. Validated for use in zaius-magento-2, users in custom environments are encouraged to test and validate thoroughly (and note any issues via the GitHub issue tracker).",
   "keywords": [],
   "type": "library",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "license": "MIT",
   "authors": [
     {
