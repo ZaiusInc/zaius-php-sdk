@@ -24,7 +24,7 @@ class ZaiusClient
     /** @var int  */
     protected $timeout;
 
-    const API_URL_V3 = 'https://api.zaius.com/v3';
+    const API_URL_V3 = 'http://api.zaius.com/v3';
 
     /**
      * ZaiusClient constructor.
@@ -240,7 +240,7 @@ class ZaiusClient
      * @return mixed
      * @throws ZaiusException
      */
-    public function createObjectSchema($name,$displayName,$alias,$fields,$relations,$queue=false) {
+    public function createObjectSchema($name,$displayName,$alias='',$fields,$relations,$queue=false) {
         $this->apiKey = $this->privateKey;
         $data = [];
         $data['name'] = $name;
@@ -405,27 +405,18 @@ class ZaiusClient
     }
 
     public function setQueueDatabaseCredentials($credentials,$jobTable='') {
-        // ZAI-224 Disabled queuing system
-        throw new \Exception("Queuing system disabled");
-        return; 
-        // END ZAI-224
-        
-	/* if($jobTable) {
+        if($jobTable) {
             \DJJob::configure($credentials,$jobTable);
         }
         else {
             \DJJob::configure($credentials);
-        } */ 
+        }
 
     }
 
     protected function process($data,$url,$method,$queue) {
         if($queue) {
-            // ZAI-224 Disabled queuing system
-            throw new \Exception("Queuing system disabled");
-            return; 
-            // END ZAI-224
-            // return \DJJob::enqueue(new Job($this->apiKey,$data,$url,$method));
+            return \DJJob::enqueue(new Job($this->apiKey,$data,$url,$method));
         }
         else {
             return $this->post($data,$url,$method);
@@ -479,11 +470,7 @@ class ZaiusClient
 
     public function call($parameters, $method, $url, $queue = false) {
         if($queue) {
-            // ZAI-224 Disabled queuing system
-            throw new \Exception("Queuing system disabled");
-            return; 
-            // END ZAI-224
-            // return \DJJob::enqueue(new Job($this->apiKey,$parameters,$url,$method));
+            return \DJJob::enqueue(new Job($this->apiKey,$parameters,$url,$method));
         }
         else {
             $method = strtoupper($method);
@@ -572,12 +559,11 @@ class ZaiusClient
 
         $result = curl_exec($curl);
         $info = curl_getinfo($curl);
+        curl_close($curl);
         if ($result === false || ($info['http_code'] != 200 && $info['http_code'] != 202 && $info['http_code']!=404)) {
             $error = curl_error($curl);
-            curl_close($curl);
             throw new ZaiusException("Failed to GET from Zaius. Error: $error . Http code {$info['http_code']}. Raw response $result");
         }
-        curl_close($curl);
         if($info['http_code'] == 404) {
             return null;
         }
