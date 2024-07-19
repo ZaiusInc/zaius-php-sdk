@@ -24,7 +24,7 @@ class ZaiusClient
     /** @var int  */
     protected $timeout;
 
-    const API_URL_V3 = 'http://api.zaius.com/v3';
+    const API_URL_V3 = 'https://api.zaius.com/v3';
 
     /**
      * ZaiusClient constructor.
@@ -240,12 +240,12 @@ class ZaiusClient
      * @return mixed
      * @throws ZaiusException
      */
-    public function createObjectSchema($name,$displayName,$alias='',$fields,$relations,$queue=false) {
+    public function createObjectSchema($name,$displayName,$alias,$fields,$relations,$queue=false) {
         $this->apiKey = $this->privateKey;
         $data = [];
         $data['name'] = $name;
         $data['display_name'] = $displayName;
-        $data['alias'] = $alias;
+        $data['alias'] = $alias ?? '';
         $data['fields'] = $fields;
         $data['relations'] = $relations;
 
