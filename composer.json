@@ -18,8 +18,7 @@
     "php": ">=5.5",
     "aws/aws-sdk-php": "^3.85",
     "ext-curl": "*",
-    "ext-json": "*",
-    "seatgeek/djjob": "^1.0"
+    "ext-json": "*"
   },
   "require-dev": {
     "phpunit/phpunit": "~4.0"
