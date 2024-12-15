@@ -257,7 +257,7 @@ $fields =  [
 $relations = [
 ];
 
-$zaiusClient->createObjectSchema('test_objects', 'Test Object', 'test_object', $fields, $relations);
+$zaiusClient->createObjectSchema('test_objects', 'Test Object', $fields, $relations, 'test_object');
         
 ```
 
