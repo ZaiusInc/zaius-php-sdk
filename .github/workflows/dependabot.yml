@@ -1,0 +1,26 @@
+# Dependabot Automation
+#
+# Purpose:
+#   Automatically approves and merges Dependabot PRs that only modify yarn.lock files.
+#
+# How it works:
+#   - Calls the shared dependabot-automation workflow from odpint-shared-workflows
+#   - Triggers only on PR creation/updates
+#   - The shared workflow validates, approves, waits for checks, and merges
+#
+# Note:
+#   Does NOT require the repository "Auto-merge" setting to be enabled.
+
+name: Dependabot automation
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automation:
+    uses: ZaiusInc/odpint-shared-workflows/.github/workflows/dependabot-automation.yml@latest-stable
+    secrets: inherit
